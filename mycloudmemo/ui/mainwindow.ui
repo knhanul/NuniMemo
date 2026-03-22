@@ -1,0 +1,549 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1400</width>
+    <height>900</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>누니메모</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QMainWindow {
+    background-color: #f8fafc;
+}</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <item>
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="childrenCollapsible">
+       <bool>false</bool>
+      </property>
+      <property name="handleWidth">
+       <number>1</number>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QSplitter::handle {
+    background-color: #e2e8f0;
+}</string>
+      </property>
+      <widget class="QWidget" name="sidebar" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>280</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>400</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">#sidebar {
+    background-color: #ffffff;
+    border-right: 1px solid #e2e8f0;
+}</string>
+       </property>
+       <layout class="QVBoxLayout" name="sidebarLayout">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QWidget" name="folderHeader" native="true">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>48</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>48</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">#folderHeader {
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}</string>
+          </property>
+          <layout class="QHBoxLayout" name="folderHeaderLayout">
+           <property name="leftMargin">
+            <number>16</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>12</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="folderLabel">
+             <property name="text">
+              <string>폴더</string>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">font-size: 14px;
+font-weight: 600;
+color: #1e293b;</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="folderSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="addFolderButton">
+             <property name="minimumSize">
+              <size>
+               <width>28</width>
+               <height>28</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>28</width>
+               <height>28</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>+</string>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QPushButton {
+    background-color: transparent;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    color: #64748b;
+    font-size: 16px;
+    font-weight: 500;
+}
+QPushButton:hover {
+    background-color: #f1f5f9;
+    border-color: #94a3b8;
+    color: #475569;
+}</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTreeWidget" name="folderTree">
+          <property name="styleSheet">
+           <string notr="true">QTreeWidget {
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 8px;
+}
+QTreeWidget::item {
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 2px 0px;
+    color: #475569;
+}
+QTreeWidget::item:hover {
+    background-color: #f1f5f9;
+}
+QTreeWidget::item:selected {
+    background-color: #e0f2fe;
+    color: #0369a1;
+}</string>
+          </property>
+          <property name="headerHidden">
+           <bool>true</bool>
+          </property>
+          <property name="indentation">
+           <number>16</number>
+          </property>
+          <column>
+           <property name="text">
+            <string notr="true">1</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item>
+         <widget class="QWidget" name="memoHeader" native="true">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>48</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>48</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">#memoHeader {
+    background-color: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+}</string>
+          </property>
+          <layout class="QHBoxLayout" name="memoHeaderLayout">
+           <property name="leftMargin">
+            <number>16</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>12</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="memoLabel">
+             <property name="text">
+              <string>메모</string>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">font-size: 14px;
+font-weight: 600;
+color: #1e293b;</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="memoSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="addMemoButton">
+             <property name="minimumSize">
+              <size>
+               <width>28</width>
+               <height>28</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>28</width>
+               <height>28</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>+</string>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QPushButton {
+    background-color: transparent;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    color: #64748b;
+    font-size: 16px;
+    font-weight: 500;
+}
+QPushButton:hover {
+    background-color: #f1f5f9;
+    border-color: #94a3b8;
+    color: #475569;
+}</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QListWidget" name="memoList">
+          <property name="styleSheet">
+           <string notr="true">QListWidget {
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 8px;
+}
+QListWidget::item {
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 2px 0px;
+    color: #475569;
+}
+QListWidget::item:hover {
+    background-color: #f1f5f9;
+}
+QListWidget::item:selected {
+    background-color: #e0f2fe;
+    color: #0369a1;
+}</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="editorPanel" native="true">
+       <property name="styleSheet">
+        <string notr="true">#editorPanel {
+    background-color: #f8fafc;
+}</string>
+       </property>
+       <layout class="QVBoxLayout" name="editorLayout">
+        <property name="leftMargin">
+         <number>24</number>
+        </property>
+        <property name="topMargin">
+         <number>24</number>
+        </property>
+        <property name="rightMargin">
+         <number>24</number>
+        </property>
+        <property name="bottomMargin">
+         <number>24</number>
+        </property>
+        <item>
+         <widget class="QFrame" name="editorCard">
+          <property name="styleSheet">
+           <string notr="true">QFrame {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+}</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <layout class="QVBoxLayout" name="cardLayout">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QWidget" name="editorHeader" native="true">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>56</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>56</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">#editorHeader {
+    background-color: transparent;
+    border-bottom: 1px solid #f1f5f9;
+}</string>
+             </property>
+             <layout class="QHBoxLayout" name="editorHeaderLayout">
+              <property name="leftMargin">
+               <number>20</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>16</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="logoLabel">
+                <property name="text">
+                 <string>📝</string>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">font-size: 22px;</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="currentFolderLabel">
+                <property name="text">
+                 <string>폴더: 메모</string>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">font-size: 15px;
+font-weight: 600;
+color: #1e293b;</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="editorSpacer">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QPushButton" name="settingsButton">
+                <property name="minimumSize">
+                 <size>
+                  <width>32</width>
+                  <height>32</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>32</width>
+                  <height>32</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>⚙️</string>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QPushButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+}
+QPushButton:hover {
+    background-color: #f1f5f9;
+}</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="syncButton">
+                <property name="minimumSize">
+                 <size>
+                  <width>32</width>
+                  <height>32</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>32</width>
+                  <height>32</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>🔄</string>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QPushButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+}
+QPushButton:hover {
+    background-color: #f1f5f9;
+}</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="syncStatusLabel">
+                <property name="text">
+                 <string>● 로컬</string>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">font-size: 13px;
+font-weight: 500;
+color: #22c55e;</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QTextEdit" name="editor">
+             <property name="styleSheet">
+              <string notr="true">QTextEdit {
+    background-color: #ffffff;
+    border: none;
+    padding: 16px 20px;
+    font-family: &quot;Malgun Gothic&quot;, &quot;Segoe UI&quot;, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #334155;
+    selection-background-color: #bae6fd;
+}</string>
+             </property>
+             <property name="placeholderText">
+              <string>여기에 메모를 작성하세요...
+
+팁: Ctrl+V로 클립보드 이미지를 바로 붙여넣을 수 있습니다.</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
