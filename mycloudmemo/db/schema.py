@@ -26,15 +26,21 @@ CREATE TABLE IF NOT EXISTS memos (
     folder_id TEXT NOT NULL REFERENCES folders(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     file_name TEXT NOT NULL,  -- Relative path like "notes/2024/memo_abc123.md"
+    memo_type TEXT NOT NULL DEFAULT 'rich_text',  -- rich_text, markdown, image
     is_synced INTEGER NOT NULL DEFAULT 0,  -- 0 = dirty, 1 = synced
     last_modified TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_memos_folder_id ON memos(folder_id);
 CREATE INDEX IF NOT EXISTS idx_memos_synced ON memos(is_synced, last_modified);
+CREATE INDEX IF NOT EXISTS idx_memos_type ON memos(memo_type);
 
 -- Root folder
 INSERT OR IGNORE INTO folders (id, parent_id, name)
-VALUES ('root', NULL, 'Notes');
+VALUES ('root', NULL, '모든 메모');
+
+-- Migration: Add updated_at column to existing memos table
+ALTER TABLE memos ADD COLUMN updated_at TEXT;
 """

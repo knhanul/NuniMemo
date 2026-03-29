@@ -7,8 +7,8 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from PySide6.QtCore import Qt, QMimeData, QTimer, QBuffer, Signal, QRect, QPoint
-from PySide6.QtGui import QAction, QCloseEvent, QIcon, QPixmap, QDrag, QClipboard, QPainter, QPen, QColor, QCursor, QTextCursor, QBrush
+from PySide6.QtCore import Qt, QMimeData, QTimer, QBuffer, Signal, QRect, QPoint, QSize
+from PySide6.QtGui import QAction, QCloseEvent, QIcon, QPixmap, QDrag, QClipboard, QPainter, QPen, QColor, QCursor, QTextCursor, QBrush, QFontDatabase
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
     QStyle,
     QCheckBox,
     QFileDialog,
+    QGraphicsDropShadowEffect,
 )
 
 from mycloudmemo.ui.ui_mainwindow import Ui_MainWindow
@@ -43,7 +44,7 @@ from mycloudmemo.ui.ui_mainwindow import Ui_MainWindow
 from mycloudmemo.db.database import DatabaseManager, FolderRecord, MemoRecord
 from mycloudmemo.storage.file_manager import FileStorageManager
 from mycloudmemo.sync.enhanced_manager import EnhancedSyncManager
-from mycloudmemo.config import get_storage_path, change_storage_path, get_app_paths
+from mycloudmemo.config import get_storage_path, change_workspace_path, get_app_paths
 
 
 class ImageResizeDialog(QDialog):
@@ -512,63 +513,127 @@ class FolderNameDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("새 폴더")
         self.setModal(True)
-        self.setFixedSize(400, 150)
+        self.setFixedSize(400, 200)
+
+        # Apply modern theme
+        self._apply_dialog_style()
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(16)
-        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(20)
+        layout.setContentsMargins(32, 32, 32, 32)
 
-        label = QLabel("폴더 이름:", self)
-        label.setStyleSheet("font-size: 14px; font-weight: 600; color: #1d232f;")
+        label = QLabel("폴더 이름", self)
+        label.setStyleSheet("""
+            QLabel {
+                font-size: 18px;
+                font-weight: 600;
+                color: #1d1d1f;
+                margin-bottom: 8px;
+                font-family: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+            }
+        """)
 
         self.name_input = QLineEdit(self)
         self.name_input.setPlaceholderText("폴더 이름을 입력하세요...")
         self.name_input.setStyleSheet("""
             QLineEdit {
-                border: 1px solid #d9e2ec;
-                border-radius: 8px;
-                padding: 10px 16px;
-                font-family: "Malgun Gothic", "Segoe UI", "Nanum Gothic", sans-serif;
-                font-size: 14px;
-                background-color: #ffffff;
-                text-indent: 0px;
-                min-height: 20px;
+                background: rgba(255, 255, 255, 0.95);
+                border: 1.5px solid rgba(0, 0, 0, 0.08);
+                border-radius: 12px;
+                padding: 16px 20px;
+                font-family: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+                font-size: 16px;
+                color: #1d1d1f;
+                font-weight: 500;
+                transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
             }
             QLineEdit:focus {
-                border: 2px solid #1890f2;
+                border: 2px solid rgba(0, 122, 255, 0.6);
+                background: rgba(255, 255, 255, 1.0);
+                box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+                outline: none;
+            }
+            QLineEdit:hover:not(:focus) {
+                border: 1.5px solid rgba(0, 0, 0, 0.15);
+                background: rgba(255, 255, 255, 1.0);
             }
         """)
 
-        button_box = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
-            self
-        )
-        button_box.accepted.connect(self.accept)
-        button_box.rejected.connect(self.reject)
-        button_box.setStyleSheet("""
-            QDialogButtonBox QPushButton {
-                background-color: #1890f2;
-                color: white;
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(12)
+        
+        cancel_button = QPushButton("취소", self)
+        cancel_button.setStyleSheet("""
+            QPushButton {
+                background: rgba(142, 142, 147, 0.12);
+                color: #1d1d1f;
                 border: none;
-                border-radius: 6px;
-                padding: 10px 20px;
-                font-family: "Malgun Gothic", "Segoe UI", "Nanum Gothic", sans-serif;
-                font-size: 14px;
-                font-weight: 500;
-                min-width: 80px;
-                min-height: 20px;
+                border-radius: 12px;
+                padding: 14px 24px;
+                font-family: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+                font-size: 16px;
+                font-weight: 600;
+                min-width: 100px;
+                transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
             }
-            QDialogButtonBox QPushButton:hover {
-                background-color: #1185e6;
+            QPushButton:hover {
+                background: rgba(142, 142, 147, 0.2);
+                transform: translateY(-1px);
+            }
+            QPushButton:pressed {
+                background: rgba(142, 142, 147, 0.3);
+                transform: translateY(0px);
             }
         """)
+        cancel_button.clicked.connect(self.reject)
+        
+        ok_button = QPushButton("확인", self)
+        ok_button.setStyleSheet("""
+            QPushButton {
+                background: rgba(0, 122, 255, 0.9);
+                color: white;
+                border: none;
+                border-radius: 12px;
+                padding: 14px 24px;
+                font-family: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+                font-size: 16px;
+                font-weight: 600;
+                min-width: 100px;
+                transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+            }
+            QPushButton:hover {
+                background: rgba(0, 122, 255, 1.0);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            }
+            QPushButton:pressed {
+                background: rgba(0, 122, 255, 0.8);
+                transform: translateY(0px);
+            }
+        """)
+        ok_button.clicked.connect(self.accept)
+
+        button_layout.addStretch()
+        button_layout.addWidget(cancel_button)
+        button_layout.addWidget(ok_button)
 
         layout.addWidget(label)
         layout.addWidget(self.name_input)
-        layout.addWidget(button_box)
+        layout.addLayout(button_layout)
 
         self.name_input.setFocus()
         self.name_input.returnPressed.connect(self.accept)
+
+    def _apply_dialog_style(self) -> None:
+        """Apply Apple-style theme to dialog."""
+        self.setStyleSheet("""
+            QDialog {
+                background: rgba(255, 255, 255, 0.98);
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 20px;
+                backdrop-filter: blur(20px);
+            }
+        """)
 
     def get_folder_name(self) -> str:
         """Return the entered folder name."""
@@ -590,57 +655,96 @@ class StorageSettingsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("저장 위치 설정")
         self.setModal(True)
-        self.setFixedSize(600, 250)
+        self.setFixedSize(600, 280)
+
+        # Apply modern theme
+        self._apply_dialog_style()
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(16)
-        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(20)
+        layout.setContentsMargins(32, 32, 32, 32)
 
         # Current path label
-        current_label = QLabel("현재 저장 위치:", self)
-        current_label.setStyleSheet("font-size: 14px; font-weight: 600; color: #1d232f;")
+        current_label = QLabel("현재 저장 위치", self)
+        current_label.setStyleSheet("""
+            QLabel {
+                font-size: 18px;
+                font-weight: 600;
+                color: #1d1d1f;
+                margin-bottom: 8px;
+                font-family: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+            }
+        """)
         layout.addWidget(current_label)
 
         self.current_path_label = QLabel(self)
-        self.current_path_label.setStyleSheet("font-size: 13px; color: #64748b; padding: 8px; background-color: #f1f5f9; border-radius: 6px;")
+        self.current_path_label.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                color: #6b7280;
+                padding: 12px 16px;
+                background-color: rgba(243, 244, 246, 0.8);
+                border-radius: 8px;
+                font-family: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+            }
+        """)
         self.current_path_label.setWordWrap(True)
         layout.addWidget(self.current_path_label)
 
         # New path selection
         path_layout = QHBoxLayout()
+        path_layout.setSpacing(12)
         
         self.path_input = QLineEdit(self)
         self.path_input.setPlaceholderText("새 저장 위치를 선택하세요...")
         self.path_input.setStyleSheet("""
             QLineEdit {
-                border: 1px solid #d9e2ec;
-                border-radius: 8px;
-                padding: 10px 16px;
-                font-family: "Malgun Gothic", "Segoe UI", "Nanum Gothic", sans-serif;
-                font-size: 14px;
-                background-color: #ffffff;
-                min-height: 20px;
+                background: rgba(255, 255, 255, 0.95);
+                border: 1.5px solid rgba(0, 0, 0, 0.08);
+                border-radius: 12px;
+                padding: 16px 20px;
+                font-family: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+                font-size: 15px;
+                color: #1d1d1f;
+                font-weight: 500;
+                transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
             }
             QLineEdit:focus {
-                border: 2px solid #1890f2;
+                border: 2px solid rgba(0, 122, 255, 0.6);
+                background: rgba(255, 255, 255, 1.0);
+                box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+                outline: none;
+            }
+            QLineEdit:hover:not(:focus) {
+                border: 1.5px solid rgba(0, 0, 0, 0.15);
+                background: rgba(255, 255, 255, 1.0);
             }
         """)
         
-        browse_button = QPushButton("폴더 선택...", self)
+        browse_button = QPushButton("폴더 선택", self)
         browse_button.setCursor(Qt.CursorShape.PointingHandCursor)
         browse_button.setStyleSheet("""
             QPushButton {
-                background-color: #1890f2;
+                background: rgba(0, 122, 255, 0.9);
                 color: white;
                 border: none;
-                border-radius: 6px;
-                padding: 10px 16px;
-                font-family: "Malgun Gothic", "Segoe UI", "Nanum Gothic", sans-serif;
-                font-size: 13px;
-                font-weight: 500;
+                border-radius: 12px;
+                padding: 16px 20px;
+                font-family: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+                font-size: 15px;
+                font-weight: 600;
+                min-width: 100px;
+                transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
             }
             QPushButton:hover {
-                background-color: #1185e6;
+                background: rgba(0, 122, 255, 1.0);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            }
+            QPushButton:pressed {
+                background: rgba(0, 122, 255, 0.8);
+                transform: translateY(0px);
             }
         """)
         browse_button.clicked.connect(self._browse_folder)
@@ -652,45 +756,126 @@ class StorageSettingsDialog(QDialog):
         # Migrate checkbox
         self.migrate_checkbox = QCheckBox("기존 데이터를 새 위치로 이동", self)
         self.migrate_checkbox.setChecked(True)
-        self.migrate_checkbox.setStyleSheet("font-size: 13px; color: #1d232f;")
+        self.migrate_checkbox.setStyleSheet("""
+            QCheckBox {
+                color: #1d1d1f;
+                spacing: 12px;
+                font-family: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+                font-size: 15px;
+                font-weight: 500;
+            }
+            QCheckBox::indicator {
+                width: 20px;
+                height: 20px;
+                border-radius: 5px;
+                border: 2px solid rgba(0, 0, 0, 0.2);
+                background: rgba(255, 255, 255, 0.8);
+                transition: all 0.2s ease;
+            }
+            QCheckBox::indicator:hover {
+                border: 2px solid rgba(0, 122, 255, 0.5);
+                background: rgba(0, 122, 255, 0.1);
+            }
+            QCheckBox::indicator:checked {
+                background: rgba(0, 122, 255, 0.9);
+                border: 2px solid rgba(0, 122, 255, 0.9);
+                image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTEiIHZpZXdCb3g9IjAgMCAxNCAxMSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEzIDAuNUw0LjUgOUwxIDUuNSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+);
+            }
+        """)
         layout.addWidget(self.migrate_checkbox)
 
         # Info label
-        info_label = QLabel("※ 저장 위치를 변경하면 앱이 새 위치를 사용합니다.\n기존 데이터를 이동하지 않으면 새 위치에서 비어있는 상태로 시작합니다.", self)
-        info_label.setStyleSheet("font-size: 12px; color: #64748b;")
+        info_label = QLabel("저장 위치를 변경하면 앱이 새 위치를 사용합니다.\n기존 데이터를 이동하지 않으면 새 위치에서 비어있는 상태로 시작합니다.", self)
+        info_label.setStyleSheet("""
+            QLabel {
+                font-size: 13px;
+                color: #6b7280;
+                padding: 12px 16px;
+                background-color: rgba(243, 244, 246, 0.6);
+                border-radius: 8px;
+                font-family: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+                line-height: 1.4;
+            }
+        """)
         info_label.setWordWrap(True)
         layout.addWidget(info_label)
 
         layout.addStretch()
 
         # Buttons
-        button_box = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
-            self
-        )
-        button_box.accepted.connect(self.accept)
-        button_box.rejected.connect(self.reject)
-        button_box.setStyleSheet("""
-            QDialogButtonBox QPushButton {
-                background-color: #1890f2;
-                color: white;
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(12)
+        
+        cancel_button = QPushButton("취소", self)
+        cancel_button.setStyleSheet("""
+            QPushButton {
+                background: rgba(142, 142, 147, 0.12);
+                color: #1d1d1f;
                 border: none;
-                border-radius: 6px;
-                padding: 10px 20px;
-                font-family: "Malgun Gothic", "Segoe UI", "Nanum Gothic", sans-serif;
-                font-size: 14px;
-                font-weight: 500;
-                min-width: 80px;
-                min-height: 20px;
+                border-radius: 12px;
+                padding: 14px 24px;
+                font-family: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+                font-size: 16px;
+                font-weight: 600;
+                min-width: 100px;
+                transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
             }
-            QDialogButtonBox QPushButton:hover {
-                background-color: #1185e6;
+            QPushButton:hover {
+                background: rgba(142, 142, 147, 0.2);
+                transform: translateY(-1px);
+            }
+            QPushButton:pressed {
+                background: rgba(142, 142, 147, 0.3);
+                transform: translateY(0px);
             }
         """)
-        layout.addWidget(button_box)
+        cancel_button.clicked.connect(self.reject)
+        
+        ok_button = QPushButton("적용", self)
+        ok_button.setStyleSheet("""
+            QPushButton {
+                background: rgba(0, 122, 255, 0.9);
+                color: white;
+                border: none;
+                border-radius: 12px;
+                padding: 14px 24px;
+                font-family: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+                font-size: 16px;
+                font-weight: 600;
+                min-width: 100px;
+                transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+            }
+            QPushButton:hover {
+                background: rgba(0, 122, 255, 1.0);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            }
+            QPushButton:pressed {
+                background: rgba(0, 122, 255, 0.8);
+                transform: translateY(0px);
+            }
+        """)
+        ok_button.clicked.connect(self.accept)
+
+        button_layout.addStretch()
+        button_layout.addWidget(cancel_button)
+        button_layout.addWidget(ok_button)
+        layout.addLayout(button_layout)
 
         # Load current path
         self._load_current_path()
+
+    def _apply_dialog_style(self) -> None:
+        """Apply Apple-style theme to dialog."""
+        self.setStyleSheet("""
+            QDialog {
+                background: rgba(255, 255, 255, 0.98);
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 20px;
+                backdrop-filter: blur(20px);
+            }
+        """)
 
     def _load_current_path(self) -> None:
         """Load and display current storage path."""
@@ -737,29 +922,198 @@ class MainWindow(QMainWindow):
         self.auto_save_delay = 2000  # 2 seconds
         self.is_modified = False
 
+        # Load custom font and set as global default
+        self._setup_custom_font()
+
+        # Apply modern Apple-style theme
+        self._apply_modern_theme()
+
         # Load Qt Designer UI
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         
         # Connect UI elements to variables for backward compatibility
         self.folder_tree = self.ui.folderTree
+        
+        # Replace QTreeWidget with FolderTreeWidget for drag-drop support
+        if isinstance(self.folder_tree, QTreeWidget):
+            parent = self.folder_tree.parent()
+            layout = parent.layout()
+            
+            # Create new FolderTreeWidget with same properties
+            new_tree = FolderTreeWidget(parent)
+            new_tree.setObjectName(self.folder_tree.objectName())
+            new_tree.setStyleSheet(self.folder_tree.styleSheet())
+            new_tree.setHeaderHidden(self.folder_tree.isHeaderHidden())
+            new_tree.setIndentation(self.folder_tree.indentation())
+            new_tree.setContextMenuPolicy(self.folder_tree.contextMenuPolicy())
+            new_tree.setDragEnabled(True)
+            new_tree.setAcceptDrops(True)
+            new_tree.setDragDropMode(QTreeWidget.DragDropMode.InternalMove)
+            new_tree.setDefaultDropAction(Qt.DropAction.MoveAction)
+            
+            # Replace in layout
+            index = layout.indexOf(self.folder_tree)
+            layout.removeWidget(self.folder_tree)
+            layout.insertWidget(index, new_tree)
+            self.folder_tree.deleteLater()
+            self.folder_tree = new_tree
+            self.ui.folderTree = new_tree
+        
         self.note_list = self.ui.memoList
         self.editor = self.ui.editor
         self.folder_label = self.ui.currentFolderLabel
         self.sync_label = self.ui.syncStatusLabel
-        self.sync_button = self.ui.syncButton
         self.add_folder_button = self.ui.addFolderButton
+        self.folder_delete_button = self.ui.folderDeleteButton
         self.add_note_button = self.ui.addMemoButton
+        self.memo_delete_button = self.ui.memoDeleteButton
         self.settings_button = self.ui.settingsButton
         
         # Setup custom widgets
         self._setup_editor()
+        self._setup_card_shadow()
+        self._setup_button_icons()
         self._create_actions()
         self._create_toolbar()
         self._create_tray_icon()
         self._connect_signals()
         self._load_folders()
         self._load_memos(self.current_folder_id)
+
+    def _setup_custom_font(self) -> None:
+        """Load Pretendard font and set as global default."""
+        try:
+            # Get font file path
+            font_path = Path(__file__).parent.parent.parent / "Pretendard-Regular.ttf"
+            
+            if font_path.exists():
+                # Load font into QFontDatabase
+                font_db = QFontDatabase()
+                font_id = font_db.addApplicationFont(str(font_path))
+                
+                if font_id != -1:
+                    font_families = font_db.applicationFontFamilies(font_id)
+                    if font_families:
+                        font_family = font_families[0]
+                        
+                        # Set as global default font
+                        app_font = QApplication.font()
+                        app_font.setFamily(font_family)
+                        app_font.setPointSize(14)
+                        QApplication.setFont(app_font)
+                        
+                        print(f"Successfully loaded and set Pretendard font: {font_family}")
+                    else:
+                        print("No font families found for Pretendard")
+                else:
+                    print("Failed to load Pretendard font")
+            else:
+                print(f"Pretendard font file not found at: {font_path}")
+                # Fallback to system fonts
+                app_font = QApplication.font()
+                app_font.setFamily("Apple SD Gothic Neo")
+                app_font.setPointSize(14)
+                QApplication.setFont(app_font)
+                
+        except Exception as e:
+            print(f"Error setting up custom font: {e}")
+            # Fallback to system fonts
+            app_font = QApplication.font()
+            app_font.setFamily("Apple SD Gothic Neo")
+            app_font.setPointSize(14)
+            QApplication.setFont(app_font)
+
+    def _setup_card_shadow(self) -> None:
+        """Apply iOS-style card shadow effect to editorCard widget."""
+        try:
+            # Create drop shadow effect
+            shadow = QGraphicsDropShadowEffect()
+            
+            # iOS-style shadow settings
+            shadow.setBlurRadius(25.0)  # Wide blur radius for soft shadow
+            shadow.setXOffset(0.0)      # No horizontal offset for centered shadow
+            shadow.setYOffset(2.0)      # Slight vertical offset for depth
+            shadow.setColor(QColor(0, 0, 0, 60))  # Subtle shadow with transparency
+            
+            # Apply shadow to editorCard widget
+            self.ui.editorCard.setGraphicsEffect(shadow)
+            
+            print("Applied iOS-style card shadow effect to editorCard")
+            
+        except Exception as e:
+            print(f"Error applying card shadow: {e}")
+
+    def _apply_modern_theme(self) -> None:
+        """Apply modern Apple-style theme to the application."""
+        try:
+            # Get the path to the QSS file
+            qss_path = Path(__file__).parent.parent / "assets" / "modern_style.qss"
+            
+            # Read and apply the stylesheet
+            with open(qss_path, 'r', encoding='utf-8') as f:
+                qss_content = f.read()
+            
+            self.setStyleSheet(qss_content)
+            print(f"Applied modern theme from: {qss_path}")
+            
+        except Exception as e:
+            print(f"Failed to apply modern theme: {e}")
+            # Fallback to basic styling if theme file not found
+            self.setStyleSheet("""
+                QMainWindow {
+                    background-color: #f5f5f7;
+                }
+                QScrollBar:vertical {
+                    background: transparent;
+                    width: 8px;
+                    border-radius: 4px;
+                }
+                QScrollBar::handle:vertical {
+                    background: rgba(0, 0, 0, 0.2);
+                    border-radius: 4px;
+                }
+                QTreeWidget::item:selected, QListWidget::item:selected {
+                    background: rgba(0, 122, 255, 0.15);
+                    border-radius: 12px;
+                    color: #1d1d1f;
+                }
+            """)
+
+    def _setup_button_icons(self) -> None:
+        """Set icon images for toolbar buttons."""
+        # Get assets directory path
+        assets_path = Path(__file__).parent.parent / "assets"
+        
+        # Add Folder button - use folder-plus icon
+        folder_plus_icon = QIcon(str(assets_path / "folder-plus.svg"))
+        self.add_folder_button.setIcon(folder_plus_icon)
+        self.add_folder_button.setText("")
+        self.add_folder_button.setIconSize(QSize(16, 16))
+        
+        # Delete Folder button - use folder-x icon
+        folder_x_icon = QIcon(str(assets_path / "folder-x.svg"))
+        self.folder_delete_button.setIcon(folder_x_icon)
+        self.folder_delete_button.setText("")
+        self.folder_delete_button.setIconSize(QSize(16, 16))
+        
+        # Add Memo button - use file-plus icon
+        file_plus_icon = QIcon(str(assets_path / "file-plus.svg"))
+        self.add_note_button.setIcon(file_plus_icon)
+        self.add_note_button.setText("")
+        self.add_note_button.setIconSize(QSize(16, 16))
+        
+        # Delete Memo button - use file-x icon
+        file_x_icon = QIcon(str(assets_path / "file-x.svg"))
+        self.memo_delete_button.setIcon(file_x_icon)
+        self.memo_delete_button.setText("")
+        self.memo_delete_button.setIconSize(QSize(16, 16))
+        
+        # Settings button - use computer/settings icon (fallback to standard icon)
+        settings_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
+        self.settings_button.setIcon(settings_icon)
+        self.settings_button.setText("")
+        self.settings_button.setIconSize(QSize(16, 16))
 
     def _setup_editor(self) -> None:
         """Setup the editor with custom configuration."""
@@ -791,6 +1145,7 @@ class MainWindow(QMainWindow):
         self.folder_tree.setDefaultDropAction(Qt.DropAction.MoveAction)
         self.folder_tree.setDragDropOverwriteMode(False)
         self.folder_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.folder_tree.customContextMenuRequested.connect(self._show_folder_context_menu)
         
         # Setup status bar labels
         self.ui.statusbar.showMessage("준비됨")
@@ -805,6 +1160,7 @@ class MainWindow(QMainWindow):
         # Folder tree
         self.folder_tree.itemSelectionChanged.connect(self._on_folder_selection_changed)
         self.folder_tree.customContextMenuRequested.connect(self._show_folder_context_menu)
+        self.folder_tree.folder_drop_completed.connect(self._on_folder_drop_completed)
         
         # Memo list
         self.note_list.itemSelectionChanged.connect(self._on_memo_selection_changed)
@@ -814,8 +1170,9 @@ class MainWindow(QMainWindow):
         
         # Buttons
         self.add_folder_button.clicked.connect(self._create_new_folder)
+        self.folder_delete_button.clicked.connect(self._delete_selected_folder)
         self.add_note_button.clicked.connect(self._create_new_memo)
-        self.sync_button.clicked.connect(self._manual_sync)
+        self.memo_delete_button.clicked.connect(self._delete_selected_memo)
         self.settings_button.clicked.connect(self._open_settings)
 
     def _serialize_editor_content(self) -> str:
@@ -853,15 +1210,39 @@ class MainWindow(QMainWindow):
 
         folders = self.database.fetch_folders()
         self.folder_tree.clear()
-        folder_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DirClosedIcon)
+        
+        # Get assets directory path
+        assets_path = Path(__file__).parent.parent / "assets"
+        folder_closed_icon = QIcon(str(assets_path / "folder-closed.svg"))
+        folder_open_icon = QIcon(str(assets_path / "folder-open.svg"))
 
-        children_by_parent: dict[str | None, list[FolderRecord]] = {}
+        # Find and handle root folder separately
+        root_folder = None
+        regular_folders = []
+        
         for folder in folders:
+            if folder.id == "root":
+                root_folder = folder
+            else:
+                regular_folders.append(folder)
+
+        # Build children hierarchy for regular folders only
+        children_by_parent: dict[str | None, list[FolderRecord]] = {}
+        for folder in regular_folders:
             children_by_parent.setdefault(folder.parent_id, []).append(folder)
 
         def build_item(folder: FolderRecord) -> QTreeWidgetItem:
-            item = QTreeWidgetItem([folder.name])
-            item.setIcon(0, folder_icon)
+            # Count subfolders
+            subfolder_count = self.database.count_subfolders(folder.id)
+            
+            # Build display name with subfolder indicator
+            display_name = folder.name
+            if subfolder_count > 0:
+                display_name += f" ({subfolder_count})"
+            
+            # Use SVG folder icons
+            item = QTreeWidgetItem([display_name])
+            item.setIcon(0, folder_closed_icon)
             item.setData(0, Qt.ItemDataRole.UserRole, folder.id)
             item.setFlags(
                 item.flags()
@@ -870,15 +1251,36 @@ class MainWindow(QMainWindow):
                 | Qt.ItemFlag.ItemIsSelectable
                 | Qt.ItemFlag.ItemIsEnabled
             )
+            
+            # Add children
             for child_folder in children_by_parent.get(folder.id, []):
                 item.addChild(build_item(child_folder))
+            
             return item
 
-        for root_folder in children_by_parent.get(None, []):
-            self.folder_tree.addTopLevelItem(build_item(root_folder))
+        # Add root folder as first top-level item with special styling
+        if root_folder:
+            root_item = QTreeWidgetItem([root_folder.name])
+            root_item.setIcon(0, QIcon(str(assets_path / "folder-closed.svg")))
+            root_item.setData(0, Qt.ItemDataRole.UserRole, "root")
+            root_item.setFlags(
+                root_item.flags()
+                | Qt.ItemFlag.ItemIsSelectable
+                | Qt.ItemFlag.ItemIsEnabled
+            )
+            # Remove drag/drop for root folder
+            root_item.setFlags(root_item.flags() & ~Qt.ItemFlag.ItemIsDragEnabled & ~Qt.ItemFlag.ItemIsDropEnabled)
+            self.folder_tree.addTopLevelItem(root_item)
 
-        self.folder_tree.expandAll()
+        # Add regular folders
+        for top_level_folder in children_by_parent.get(None, []):
+            self.folder_tree.addTopLevelItem(build_item(top_level_folder))
+
+        # Only expand root folder initially, let users control subfolders
         if self.folder_tree.topLevelItemCount() > 0:
+            # Expand root folder (first item)
+            self.folder_tree.expandItem(self.folder_tree.topLevelItem(0))
+            # Select root folder by default
             self.folder_tree.setCurrentItem(self.folder_tree.topLevelItem(0))
 
     def _create_actions(self) -> None:
@@ -906,7 +1308,7 @@ class MainWindow(QMainWindow):
 
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.setToolTip("누니메모")
-        self.tray_icon.setIcon(QIcon("e:/Pjt/NuniMemo/nuni_ico.ico"))
+        self.tray_icon.setIcon(QIcon(str(Path(__file__).parent.parent / "assets" / "nuni_ico.ico")))
         self.tray_icon.activated.connect(self._on_tray_icon_activated)
         tray_menu = QMenu(self)
         tray_menu.addAction(self.show_action)
@@ -915,19 +1317,66 @@ class MainWindow(QMainWindow):
         self.tray_icon.show()
 
     def _load_memos(self, folder_id: str) -> None:
-        """Populate the memo list for the selected folder."""
+        """Populate the memo list for the selected folder.
+        
+        If root folder is selected, show all memos from all folders (hub view).
+        """
 
         previous_selection_id = self.current_memo.id if self.current_memo else None
         self._is_reloading_memos = True
         self.note_list.blockSignals(True)
         self.note_list.clear()
-        memos = self.database.fetch_memos_by_folder(folder_id)
-        memo_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon)
+        
+        # Get all folders for lookup
+        folders = self.database.fetch_folders()
+        folder_map = {f.id: f for f in folders}
+        
+        # If root folder, show all memos (hub view)
+        if folder_id == "root":
+            memos = self.database.fetch_all_memos()
+        else:
+            memos = self.database.fetch_memos_by_folder(folder_id)
+        
+        # Get assets directory path
+        assets_path = Path(__file__).parent.parent / "assets"
+        file_icon = QIcon(str(assets_path / "file.svg"))
+        
+        from datetime import datetime
+        
         for memo in memos:
-            item = QListWidgetItem(memo.title)
-            item.setIcon(memo_icon)
+            # Format dates for display
+            try:
+                created_dt = datetime.fromisoformat(memo.created_at.replace('Z', '+00:00'))
+                updated_dt = datetime.fromisoformat(memo.updated_at.replace('Z', '+00:00'))
+                
+                # Format: "YYYY-MM-DD HH:mm" for Korean locale
+                created_str = created_dt.strftime("%Y-%m-%d %H:%M")
+                updated_str = updated_dt.strftime("%Y-%m-%d %H:%M")
+                
+                # Get folder name for hub view
+                folder_name = ""
+                if folder_id == "root" and memo.folder_id in folder_map:
+                    folder_name = f"📁 {folder_map[memo.folder_id].name} | "
+                
+                # Display title with dates
+                if created_dt.date() == updated_dt.date():
+                    # Same day - show one date
+                    display_text = f"{folder_name}{memo.title}\n📝 {updated_str}"
+                else:
+                    # Different days - show both
+                    display_text = f"{folder_name}{memo.title}\n📅 {created_str} → 🔄 {updated_str}"
+            except:
+                # Fallback if date parsing fails
+                folder_name = ""
+                if folder_id == "root" and memo.folder_id in folder_map:
+                    folder_name = f"📁 {folder_map[memo.folder_id].name} | "
+                display_text = f"{folder_name}{memo.title}"
+            
+            item = QListWidgetItem(display_text)
+            item.setIcon(file_icon)
             item.setData(Qt.ItemDataRole.UserRole, memo)
             self.note_list.addItem(item)
+            
         if self.note_list.count() == 0:
             self.current_memo = None
             self._set_editor_content("")
@@ -942,6 +1391,19 @@ class MainWindow(QMainWindow):
         self.note_list.blockSignals(False)
         self._is_reloading_memos = False
 
+    def _on_folder_drop_completed(self) -> None:
+        """Handle folder drop completion by refreshing the folder tree."""
+        print("Debug: Folder drop completed, refreshing folder tree")
+        # Save current folder selection
+        current_folder_id = self.current_folder_id
+        
+        # Refresh folder tree
+        self._load_folders()
+        
+        # Restore folder selection
+        if current_folder_id:
+            self._select_folder_by_id(current_folder_id)
+
     def _on_folder_selection_changed(self) -> None:
         """Handle folder tree selection changes."""
 
@@ -953,7 +1415,13 @@ class MainWindow(QMainWindow):
             return
         folder_id = current_item.data(0, Qt.ItemDataRole.UserRole)
         self.current_folder_id = folder_id
-        self.folder_label.setText(f"폴더: {current_item.text(0)}")
+        
+        # Update label with hub indicator for root folder
+        if folder_id == "root":
+            self.folder_label.setText(f"📂 {current_item.text(0)} (전체 메모)")
+        else:
+            self.folder_label.setText(f"📁 {current_item.text(0)}")
+        
         self._load_memos(folder_id)
 
     def _on_memo_selection_changed(self) -> None:
@@ -1111,10 +1579,125 @@ class MainWindow(QMainWindow):
             self._update_sync_status(f"저장 실패: {str(e)}")
             print(f"Auto-save failed: {e}")
 
+    def _delete_selected_folder(self) -> None:
+        """Delete selected folder with validation."""
+        selected_folder_item = self.folder_tree.currentItem()
+        if not selected_folder_item:
+            QMessageBox.warning(self, "폴더 삭제", "삭제할 폴더를 선택해주세요.")
+            return
+        
+        self._delete_folder(selected_folder_item)
+
+    def _delete_selected_memo(self) -> None:
+        """Delete selected memo."""
+        selected_memo_item = self.note_list.currentItem()
+        if not selected_memo_item:
+            QMessageBox.warning(self, "메모 삭제", "삭제할 메모를 선택해주세요.")
+            return
+        
+        self._delete_memo(selected_memo_item)
+
+    def _delete_folder(self, folder_item: QTreeWidgetItem) -> None:
+        """Delete folder with validation for subfolders and memos."""
+        folder_id = folder_item.data(0, Qt.ItemDataRole.UserRole)
+        folder_name = folder_item.text(0)
+        
+        # Debug: Show actual subfolder count
+        subfolder_count = self.database.count_subfolders(folder_id)
+        print(f"Debug: Folder '{folder_name}' ({folder_id}) has {subfolder_count} subfolders")
+        
+        # Check if folder has subfolders
+        if subfolder_count > 0:
+            QMessageBox.warning(
+                self, 
+                "삭제 불가", 
+                f"하위 폴더가 {subfolder_count}개 있어 삭제할 수 없습니다.\n먼저 하위 폴더를 모두 삭제해주세요."
+            )
+            return
+        
+        # Debug: Show actual memo count
+        memo_count = self.database.count_memos_in_folder(folder_id)
+        print(f"Debug: Folder '{folder_name}' ({folder_id}) has {memo_count} memos")
+        
+        # Check if folder has memos
+        if memo_count > 0:
+            QMessageBox.warning(
+                self, 
+                "삭제 불가", 
+                f"메모가 {memo_count}개 있어 삭제할 수 없습니다.\n먼저 모든 메모를 삭제해주세요."
+            )
+            return
+        
+        # Confirm deletion
+        folder_name = folder_item.text(0)
+        reply = QMessageBox.question(
+            self,
+            "폴더 삭제",
+            f"'{folder_name}' 폴더를 삭제하시겠습니까?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                # Delete from database
+                self.database.delete_folder(folder_id)
+                
+                # Reload folder tree
+                self._load_folders()
+                
+                # If current folder was deleted, switch to root
+                if self.current_folder_id == folder_id:
+                    self.current_folder_id = "root"
+                    self._load_memos(self.current_folder_id)
+                
+                QMessageBox.information(self, "삭제 완료", "폴더가 삭제되었습니다.")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "삭제 오류", f"폴더 삭제 중 오류가 발생했습니다: {str(e)}")
+
+    def _delete_memo(self, memo_item: QListWidgetItem) -> None:
+        """Delete selected memo."""
+        memo = memo_item.data(Qt.ItemDataRole.UserRole)
+        if not memo:
+            return
+        
+        # Confirm deletion
+        reply = QMessageBox.question(
+            self,
+            "메모 삭제",
+            f"'{memo.title}' 메모를 삭제하시겠습니까?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                # Delete file
+                self.file_storage.delete_memo_file(memo.file_name)
+                
+                # Delete from database
+                self.database.delete_memo(memo.id)
+                
+                # Clear editor if deleted memo was current
+                if self.current_memo and self.current_memo.id == memo.id:
+                    self.current_memo = None
+                    self._set_editor_content("")
+                    self._update_word_count()
+                
+                # Reload memo list
+                self._load_memos(self.current_folder_id)
+                
+                QMessageBox.information(self, "삭제 완료", "메모가 삭제되었습니다.")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "삭제 오류", f"메모 삭제 중 오류가 발생했습니다: {str(e)}")
+
     def _create_new_memo(self) -> None:
         """Create a new memo in the current folder."""
 
-        if self.current_folder_id == "root":
+        # Allow creating memos in any folder including root
+        if not self.current_folder_id:
             QMessageBox.warning(self, "오류", "먼저 폴더를 선택해주세요.")
             return
         
@@ -1248,59 +1831,11 @@ class MainWindow(QMainWindow):
             new_width, new_height = dialog.get_size()
             self.editor._apply_image_size(cursor, new_width, new_height)
 
-    def _manual_sync(self) -> None:
-        """Handle manual Google Drive sync request."""
-
-        reply = QMessageBox.question(
-            self,
-            "Google Drive 동기화",
-            "Google Drive에 메모를 동기화하시겠습니까?\n\n최초 실행 시 Google 로그인이 필요합니다.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes
-        )
-        
-        if reply == QMessageBox.StandardButton.Yes:
-            self._update_sync_status("Google Drive 동기화 중...")
-            
-            self.sync_button.setEnabled(False)
-            self.sync_button.setText("🔄 동기화 중...")
-            
-            QTimer.singleShot(100, self._perform_sync)
-
-    def _perform_sync(self) -> None:
-        """Perform the actual sync operation."""
-
-        try:
-            success = self.sync_manager.sync_to_google_drive()
-            
-            if success:
-                self._update_sync_status("동기화 완료")
-                QMessageBox.information(self, "성공", "Google Drive 동기화가 완료되었습니다.")
-            else:
-                self._update_sync_status("동기화 실패")
-                QMessageBox.warning(
-                    self, 
-                    "동기화 실패", 
-                    "Google Drive 동기화에 실패했습니다.\n\n"
-                    "원인:\n"
-                    "- 인터넷 연결 확인\n"
-                    "- Google 로그인 확인\n"
-                    "- 개발자에게 문의"
-                )
-                
-        except Exception as e:
-            self._update_sync_status(f"동기화 오류: {str(e)}")
-            QMessageBox.critical(self, "오류", f"동기화 중 오류가 발생했습니다:\n{str(e)}")
-            
-        finally:
-            self.sync_button.setEnabled(True)
-            self.sync_button.setText("🔄 Google Drive 동기화")
-
     def _update_sync_status(self, message: str) -> None:
-        """Reflect sync updates in the header and status bar."""
+        """Reflect save status in the header and status bar."""
 
         self.sync_label.setText(f"●  {message}")
-        self.sync_status_label.setText(f"동기화 상태: {message}")
+        self.sync_status_label.setText(f"상태: {message}")
 
     def _update_word_count(self) -> None:
         """Refresh the footer word count based on editor content."""
@@ -1311,6 +1846,11 @@ class MainWindow(QMainWindow):
 
     def _create_new_folder(self) -> None:
         """Create a new folder with user input."""
+
+        # If current folder is "모든 메모", create top-level folder
+        if self.current_folder_id == "root":
+            self._create_new_folder_at_position(None, "top_level")
+            return
 
         dialog = FolderNameDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -1353,74 +1893,69 @@ class MainWindow(QMainWindow):
     def _show_folder_context_menu(self, position) -> None:
         """Show context menu for folder operations."""
 
+        print(f"Debug: Context menu requested at position {position}")
         item = self.folder_tree.itemAt(position)
         menu = QMenu(self)
         
         if item:
             folder_id = item.data(0, Qt.ItemDataRole.UserRole)
             folder_name = item.text(0)
+            print(f"Debug: Right-clicked on folder '{folder_name}' (ID: {folder_id})")
             
-            add_submenu = QMenu("폴더 추가", self)
-            
-            add_subfolder_action = add_submenu.addAction(f"'{folder_name}' 하위에 폴더")
-            add_subfolder_action.triggered.connect(lambda: self._create_new_folder_at_position(folder_id, "subfolder"))
-            
-            if folder_id != "root":
+            # "모든 메모" 폴더는 최상위 폴더 추가만 가능
+            if folder_id == "root":
+                print("Debug: Adding '최상위 폴더 추가' for root folder")
+                add_top_level_action = menu.addAction("최상위 폴더 추가")
+                add_top_level_action.triggered.connect(lambda: self._create_new_folder_at_position(None, "top_level"))
+            else:
+                add_submenu = QMenu("폴더 추가", self)
+                
+                add_subfolder_action = add_submenu.addAction(f"'{folder_name}' 하위에 폴더")
+                add_subfolder_action.triggered.connect(lambda: self._create_new_folder_at_position(folder_id, "subfolder"))
+                
                 parent_id = self._get_parent_folder_id(folder_id)
                 add_same_level_action = add_submenu.addAction("같은 레벨에 폴더")
                 add_same_level_action.triggered.connect(lambda: self._create_new_folder_at_position(parent_id, "same_level"))
-            
-            menu.addMenu(add_submenu)
-            menu.addSeparator()
-            
-            if folder_id != "root":
+                
+                menu.addMenu(add_submenu)
+                menu.addSeparator()
+                
                 delete_action = menu.addAction("폴더 삭제")
-                delete_action.triggered.connect(lambda: self._delete_folder(folder_id, folder_name))
+                # Find the tree widget item for this folder
+                item = None
+                for i in range(self.folder_tree.topLevelItemCount()):
+                    item = self._find_folder_item(self.folder_tree.topLevelItem(i), folder_id)
+                    if item:
+                        break
+                if item:
+                    delete_action.triggered.connect(lambda: self._delete_folder(item))
         else:
+            print("Debug: Right-clicked on empty space, adding '최상위 폴더 추가'")
             add_top_level_action = menu.addAction("최상위 폴더 추가")
-            add_top_level_action.triggered.connect(lambda: self._create_new_folder_at_position("root", "subfolder"))
+            add_top_level_action.triggered.connect(lambda: self._create_new_folder_at_position(None, "top_level"))
         
         if not menu.isEmpty():
+            print("Debug: Executing context menu")
             menu.exec(self.folder_tree.mapToGlobal(position))
+        else:
+            print("Debug: Menu is empty, not showing")
 
-    def _delete_folder(self, folder_id: str, folder_name: str) -> None:
-        """Delete a folder after confirmation."""
-
-        reply = QMessageBox.question(
-            self,
-            "폴더 삭제 확인",
-            f"'{folder_name}' 폴더와 모든 내용(하위 폴더 및 메모)을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
+    def _find_folder_item(self, parent_item: QTreeWidgetItem, folder_id: str) -> QTreeWidgetItem | None:
+        """Find tree widget item by folder ID."""
+        if parent_item.data(0, Qt.ItemDataRole.UserRole) == folder_id:
+            return parent_item
         
-        if reply == QMessageBox.StandardButton.Yes:
-            result = self.database.delete_folder(folder_id)
-            if isinstance(result, tuple):
-                success, memo_files = result
-                if success:
-                    # Delete memo files from filesystem
-                    for file_name in memo_files:
-                        try:
-                            file_path = self.file_storage.notes_dir / file_name
-                            if file_path.exists():
-                                file_path.unlink()
-                                print(f"Deleted memo file: {file_path}")
-                        except Exception as e:
-                            print(f"Failed to delete memo file {file_name}: {e}")
-                    
-                    self._load_folders()
-                    self._select_folder_by_id("root")
-                    self._load_memos("root")  # Clear memo list
-                else:
-                    QMessageBox.warning(self, "오류", "폴더를 삭제할 수 없습니다.")
-            else:
-                # Backward compatibility for old return value
-                if result:
-                    self._load_folders()
-                    self._select_folder_by_id("root")
-                else:
-                    QMessageBox.warning(self, "오류", "폴더를 삭제할 수 없습니다.")
+        for i in range(parent_item.childCount()):
+            child_item = parent_item.child(i)
+            if child_item.data(0, Qt.ItemDataRole.UserRole) == folder_id:
+                return child_item
+            
+            # Recursively search in child items
+            found = self._find_folder_item(child_item, folder_id)
+            if found:
+                return found
+        
+        return None
 
     def _get_parent_folder_id(self, folder_id: str) -> str | None:
         """Get the parent folder ID for a given folder."""
@@ -1431,27 +1966,36 @@ class MainWindow(QMainWindow):
                 return folder.parent_id
         return None
 
-    def _create_new_folder_at_position(self, parent_id: str, position_type: str) -> None:
+    def _create_new_folder_at_position(self, parent_id: str | None, position_type: str) -> None:
         """Create a new folder at the specified position."""
 
+        print(f"Debug: Creating folder - parent_id={parent_id}, position_type={position_type}")
+
         dialog = FolderNameDialog(self)
-        if position_type == "same_level":
+        if position_type == "top_level":
+            dialog.setWindowTitle("최상위 폴더 추가")
+        elif position_type == "same_level":
             dialog.setWindowTitle("같은 레벨에 폴더 추가")
         elif position_type == "subfolder":
-            if parent_id == "root":
-                dialog.setWindowTitle("최상위 폴더 추가")
-            else:
-                dialog.setWindowTitle("하위 폴더 추가")
-                parent_name = self._get_folder_name_by_id(parent_id)
-                if parent_name:
-                    dialog.name_input.setPlaceholderText(f"'{parent_name}' 하위에 폴더...")
+            dialog.setWindowTitle("하위 폴더 추가")
+            parent_name = self._get_folder_name_by_id(parent_id)
+            if parent_name:
+                dialog.name_input.setPlaceholderText(f"'{parent_name}' 하위에 폴더...")
         
         if dialog.exec() == QDialog.DialogCode.Accepted:
             name = dialog.get_folder_name().strip()
+            print(f"Debug: User entered folder name: '{name}'")
             if name:
-                folder_id = self.database.create_folder(name, parent_id)
-                self._load_folders()
-                self._select_folder_by_id(folder_id)
+                try:
+                    folder_id = self.database.create_folder(name, parent_id)
+                    print(f"Debug: Created folder with ID: {folder_id}")
+                    self._load_folders()
+                    self._select_folder_by_id(folder_id)
+                except Exception as e:
+                    print(f"Debug: Error creating folder: {e}")
+                    QMessageBox.warning(self, "폴더 생성 오류", f"폴더 생성 중 오류가 발생했습니다: {str(e)}")
+        else:
+            print("Debug: User cancelled folder creation")
 
     def _get_folder_name_by_id(self, folder_id: str) -> str | None:
         """Get folder name by ID."""
@@ -1548,7 +2092,7 @@ class MainWindow(QMainWindow):
                 )
                 
                 if reply == QMessageBox.StandardButton.Yes:
-                    if change_storage_path(new_path, migrate=migrate):
+                    if change_workspace_path(new_path, migrate=migrate):
                         QMessageBox.information(
                             self,
                             "저장 위치 변경 완료",

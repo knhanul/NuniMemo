@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NuniMemo</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- TOAST UI Editor -->
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+    <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        /* Base styles */
+        * {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        }
+        
+        /* macOS-style scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: transparent;
+            border-radius: 4px;
+        }
+        
+        :hover::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Custom styles for folder/memo lists */
+        .list-item {
+            transition: all 0.2s ease;
+        }
+        
+        .list-item:hover {
+            background-color: rgba(0, 0, 0, 0.04);
+        }
+        
+        .list-item.active {
+            background-color: rgba(0, 122, 255, 0.12);
+            color: #007AFF;
+        }
+        
+        /* Editor card shadow */
+        .editor-card {
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* TOAST UI Editor Styles */
+        #editor {
+            height: 100% !important;
+            width: 100% !important;
+        }
+        
+        .toastui-editor-defaultUI {
+            border: none !important;
+            border-radius: 0 !important;
+        }
+        
+        .toastui-editor-defaultUI-toolbar {
+            border-top: none !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            background: #f8fafc !important;
+            padding: 2px 4px !important;
+            min-height: 36px !important;
+            height: auto !important;
+        }
+        
+        /* Toolbar button sizing - compact */
+        .toastui-editor-toolbar button {
+            width: 28px !important;
+            height: 28px !important;
+            padding: 2px !important;
+            margin: 0 1px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        /* Ensure icons are visible */
+        .toastui-editor-toolbar-icons {
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: inline-block !important;
+        }
+        
+        /* Remove any hover effects that might hide icons */
+        .toastui-editor-toolbar button:hover .toastui-editor-toolbar-icons,
+        .toastui-editor-toolbar button:focus .toastui-editor-toolbar-icons,
+        .toastui-editor-toolbar button:active .toastui-editor-toolbar-icons {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        /* Toolbar layout - minimize gaps */
+        .toastui-editor-toolbar {
+            display: flex !important;
+            align-items: center !important;
+            gap: 2px !important;
+        }
+        
+        .toastui-editor-toolbar .toolbar-group {
+            margin: 0 2px !important;
+        }
+        
+        .toastui-editor-toolbar-divider {
+            margin: 0 4px !important;
+        }
+        
+        /* Hide scroll sync */
+        .toastui-editor-defaultUI-toolbar .scroll-sync {
+            display: none !important;
+        }
+        
+        .toastui-editor-contents {
+            font-size: 15px !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            line-height: 1.6 !important;
+        }
+        
+        .toastui-editor-contents p {
+            margin: 0.5em 0 !important;
+        }
+        
+        .toastui-editor-contents h1,
+        .toastui-editor-contents h2,
+        .toastui-editor-contents h3,
+        .toastui-editor-contents h4,
+        .toastui-editor-contents h5,
+        .toastui-editor-contents h6 {
+            margin: 1em 0 0.5em !important;
+            font-weight: 600 !important;
+        }
+        
+        .toastui-editor-contents ul,
+        .toastui-editor-contents ol {
+            padding-left: 1.5em !important;
+            margin: 0.5em 0 !important;
+        }
+        
+        .toastui-editor-contents blockquote {
+            border-left: 3px solid #e2e8f0 !important;
+            padding-left: 1em !important;
+            margin: 0.5em 0 !important;
+            color: #64748b !important;
+        }
+        
+        .toastui-editor-contents pre {
+            background: #f1f5f9 !important;
+            padding: 0.75em !important;
+            border-radius: 6px !important;
+            font-family: monospace !important;
+        }
+        
+        .toastui-editor-contents code {
+            background: #f1f5f9 !important;
+            padding: 0.2em 0.4em !important;
+            border-radius: 4px !important;
+            font-family: monospace !important;
+        }
+        
+        .toastui-editor-contents img {
+            max-width: 100% !important;
+            height: auto !important;
+        }
+        
+        .toastui-editor-contents table {
+            border-collapse: collapse !important;
+            width: 100% !important;
+            margin: 1em 0 !important;
+            position: relative !important;
+            resize: both !important;
+            overflow: auto !important;
+            min-width: 100px !important;
+            min-height: 50px !important;
+            max-width: 100% !important;
+        }
+        
+        .toastui-editor-contents table:hover {
+            outline: 2px solid #3b82f6 !important;
+            outline-offset: 2px !important;
+        }
+        
+        .toastui-editor-contents table::-webkit-resizer {
+            background: #3b82f6 !important;
+            width: 12px !important;
+            height: 12px !important;
+            position: absolute !important;
+            bottom: 0 !important;
+            right: 0 !important;
+            cursor: nwse-resize !important;
+        }
+        
+        .toastui-editor-contents table::-moz-resizer {
+            background: #3b82f6 !important;
+            width: 12px !important;
+            height: 12px !important;
+            position: absolute !important;
+            bottom: 0 !important;
+            right: 0 !important;
+            cursor: nwse-resize !important;
+        }
+        
+        .toastui-editor-contents th,
+        .toastui-editor-contents td {
+            border: 1px solid #e2e8f0 !important;
+            padding: 0.5em !important;
+        }
+        
+        .toastui-editor-contents th {
+            background: #f8fafc !important;
+            font-weight: 600 !important;
+        }
+        
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Drag and drop styles */
+        .dragging {
+            opacity: 0.5;
+        }
+        
+        .drag-over {
+            background-color: rgba(0, 122, 255, 0.08) !important;
+            border: 2px dashed #007AFF;
+        }
+        
+        /* Tab styles */
+        .tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            font-size: 13px;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: #f8fafc;
+            max-width: 140px;
+            min-width: 60px;
+            margin-bottom: 2px;
+        }
+        
+        .tab:hover {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+        
+        .tab.active {
+            color: white;
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+        
+        .tab.active .tab-title {
+            color: white;
+        }
+        
+        .tab-title {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100px;
+            min-width: 0;
+        }
+        
+        .tab-close {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            opacity: 0.6;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        .tab-close:hover {
+            background-color: rgba(0,0,0,0.1);
+            opacity: 1;
+        }
+        
+        .tab.active .tab-close:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+        
+        .tab-content {
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .tab-content.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 h-screen w-screen overflow-hidden">
+    <div id="app" class="flex h-full w-full">
+        <!-- Left Sidebar: Folder List -->
+        <aside class="w-64 bg-white border-r border-slate-200 flex flex-col">
+            <!-- Folder Header -->
+            <div class="h-14 flex items-center justify-between px-4 border-b border-slate-100">
+                <h2 class="text-sm font-semibold text-slate-700">폴더</h2>
+                <div class="flex gap-1">
+                    <button id="btn-add-folder" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-100 transition-colors">
+                        <i data-lucide="folder-plus" class="w-4 h-4 text-slate-500"></i>
+                    </button>
+                    <button id="btn-delete-folder" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-100 transition-colors">
+                        <i data-lucide="folder-x" class="w-4 h-4 text-slate-500"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Folder Tree -->
+            <div id="folder-list" class="flex-1 overflow-y-auto p-2">
+                <!-- Folders will be rendered here -->
+            </div>
+            
+            <!-- Bottom Action Buttons -->
+            <div class="border-t border-slate-100 p-3 space-y-2">
+                <button id="btn-sync" class="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span>동기화</span>
+                </button>
+                <button id="btn-settings" class="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                    <span>설정</span>
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Middle Panel: Memo List -->
+        <section class="w-80 bg-white border-r border-slate-200 flex flex-col">
+            <!-- Memo Header -->
+            <div class="h-14 flex items-center justify-between px-4 border-b border-slate-100">
+                <h2 class="text-sm font-semibold text-slate-700">메모</h2>
+                <div class="flex gap-1">
+                    <button id="btn-add-memo" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-100 transition-colors">
+                        <i data-lucide="file-plus" class="w-4 h-4 text-slate-500"></i>
+                    </button>
+                    <button id="btn-delete-memo" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-100 transition-colors">
+                        <i data-lucide="file-x" class="w-4 h-4 text-slate-500"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Current Folder Label -->
+            <div class="px-4 py-2 bg-slate-50 border-b border-slate-100">
+                <span id="current-folder-label" class="text-xs text-slate-500">Notes</span>
+            </div>
+            
+            <!-- Sort Controls -->
+            <div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+                <span class="text-xs text-slate-500 whitespace-nowrap">정렬:</span>
+                <select id="memo-sort-field" class="text-xs px-2 py-1 border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <option value="title">제목</option>
+                    <option value="created_at">생성일</option>
+                    <option value="last_modified" selected>수정일</option>
+                </select>
+                <button id="memo-sort-direction" class="p-1 rounded-md hover:bg-slate-200 transition-colors" title="정렬 방향">
+                    <i data-lucide="arrow-down" class="w-4 h-4 text-slate-600" id="sort-icon"></i>
+                </button>
+            </div>
+            
+            <!-- Memo List -->
+            <div id="memo-list" class="flex-1 overflow-y-auto">
+                <!-- Memos will be rendered here -->
+            </div>
+        </section>
+        
+        <!-- Right Panel: Tab-based Editor -->
+        <main class="flex-1 bg-slate-50 p-6 flex flex-col">
+            <!-- Editor Container -->
+            <div class="editor-card bg-white rounded-2xl flex-1 flex flex-col overflow-hidden">
+                <!-- Tab Bar -->
+                <div id="tab-bar" class="flex flex-wrap items-start border-b border-slate-100 min-h-[48px] max-h-[120px] overflow-y-auto">
+                    <div class="flex flex-wrap items-start gap-1 px-2 py-1">
+                        <!-- Tabs will be dynamically added here -->
+                    </div>
+                </div>
+                
+                <!-- Breadcrumb: Current Memo Location -->
+                <div id="memo-location" class="hidden px-4 py-2 bg-slate-50/80 border-b border-slate-100 text-xs text-slate-500 flex items-center gap-1">
+                    <span id="location-root">모든 메모</span>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                    <span id="location-folder"></span>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                    <span id="location-memo" class="text-slate-700 font-medium"></span>
+                </div>
+                
+                <!-- Editor Content Area -->
+                <div id="editor-container" class="editor-container flex-1 h-full w-full overflow-hidden relative">
+                    <div id="editor" class="h-full w-full"></div>
+                </div>
+                
+                <!-- Status Bar -->
+                <div class="h-8 flex items-center justify-between px-6 border-t border-slate-100 bg-slate-50/50">
+                    <span id="sync-status" class="text-xs text-slate-400">동기화됨</span>
+                    <span id="word-count" class="text-xs text-slate-400">0 단어</span>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Folder Name Input Modal -->
+    <div id="folder-modal" class="fixed inset-0 bg-black/30 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 w-80 shadow-2xl">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">새 폴더</h3>
+            <input type="text" id="folder-name-input" class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="폴더 이름">
+            <div class="flex justify-end gap-2 mt-4">
+                <button id="btn-cancel-folder" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">취소</button>
+                <button id="btn-confirm-folder" class="px-4 py-2 text-sm text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">생성</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Memo Type Selection Modal -->
+    <div id="memo-type-modal" class="fixed inset-0 bg-black/30 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 w-96 shadow-2xl">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">새 메모 만들기</h3>
+            <p class="text-sm text-slate-500 mb-4">메모 유형을 선택하세요:</p>
+            
+            <div class="space-y-3">
+                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                    <input type="radio" name="memo-type" value="rich_text" checked class="w-4 h-4 text-blue-500">
+                    <div class="flex-1">
+                        <div class="font-medium text-slate-700">서식 있는 텍스트</div>
+                        <div class="text-xs text-slate-500">Quill 에디터로 서식을 적용할 수 있는 메모</div>
+                    </div>
+                    <i data-lucide="file-text" class="w-5 h-5 text-slate-400"></i>
+                </label>
+                
+                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                    <input type="radio" name="memo-type" value="markdown" class="w-4 h-4 text-blue-500">
+                    <div class="flex-1">
+                        <div class="font-medium text-slate-700">Markdown</div>
+                        <div class="text-xs text-slate-500">Markdown 문법으로 작성하는 메모</div>
+                    </div>
+                    <i data-lucide="code" class="w-5 h-5 text-slate-400"></i>
+                </label>
+                
+                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                    <input type="radio" name="memo-type" value="image" class="w-4 h-4 text-blue-500">
+                    <div class="flex-1">
+                        <div class="font-medium text-slate-700">이미지</div>
+                        <div class="text-xs text-slate-500">클립보드에서 이미지를 붙여넣는 메모</div>
+                    </div>
+                    <i data-lucide="image" class="w-5 h-5 text-slate-400"></i>
+                </label>
+            </div>
+            
+            <div class="flex justify-end gap-2 mt-6">
+                <button id="btn-cancel-memo-type" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">취소</button>
+                <button id="btn-confirm-memo-type" class="px-4 py-2 text-sm text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">생성</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/30 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 w-[500px] shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-slate-800">설정</h3>
+                <button id="btn-close-settings" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5 text-slate-400"></i>
+                </button>
+            </div>
+            
+            <!-- Storage Folder Section -->
+            <div class="space-y-4">
+                <div class="border-b border-slate-100 pb-4">
+                    <h4 class="text-sm font-medium text-slate-700 mb-3">메모 보관 폴더</h4>
+                    
+                    <!-- Current Path Display -->
+                    <div class="bg-slate-50 rounded-lg p-3 mb-3">
+                        <div class="text-xs text-slate-500 mb-1">현재 저장 위치</div>
+                        <div id="current-storage-path" class="text-sm text-slate-700 font-mono break-all">로딩 중...</div>
+                    </div>
+                    
+                    <!-- Change Folder Button -->
+                    <button id="btn-change-storage" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all">
+                        <i data-lucide="folder-open" class="w-4 h-4"></i>
+                        <span>저장 폴더 변경...</span>
+                    </button>
+                    
+                    <!-- Migration Progress (hidden by default) -->
+                    <div id="migration-progress" class="hidden mt-3">
+                        <div class="flex items-center justify-between text-xs text-slate-600 mb-2">
+                            <span id="migration-status">파일 이동 중...</span>
+                            <span id="migration-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2">
+                            <div id="migration-bar" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Warning Message -->
+                    <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0"></i>
+                            <p class="text-xs text-amber-700">
+                                저장 폴더를 변경하면 기존의 모든 메모 파일이 새 위치로 이동됩니다. 
+                                이동 중 앱을 종료하지 마세요.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Other Settings Sections can be added here -->
+                <div class="text-xs text-slate-400 text-center pt-2">
+                    NuniMemo v1.0
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="main.js"></script>
+</body>
+</html>

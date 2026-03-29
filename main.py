@@ -1,6 +1,6 @@
-"""Application entry point for MyCloudMemo."""
+"""Application entry point for NuniMemo."""
 
-from mycloudmemo.app import main
+from mycloudmemo.app_webview import main
 
 
 if __name__ == "__main__":

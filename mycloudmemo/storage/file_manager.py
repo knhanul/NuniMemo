@@ -27,14 +27,24 @@ class FileStorageManager:
         self.paths.assets_dir.mkdir(parents=True, exist_ok=True)
     
     @property
-    def notes_dir(self) -> Path:
-        """Get the notes directory path."""
-        return self.paths.notes_dir
-    
+    def notes_dir(self) -> str:
+        """Get the notes directory path as string."""
+        if hasattr(self, '_notes_dir'):
+            return self._notes_dir
+        elif hasattr(self, 'paths'):
+            return str(self.paths.notes_dir)
+        else:
+            raise AttributeError("Notes directory not set")
+
     @property
-    def assets_dir(self) -> Path:
-        """Get the assets directory path."""
-        return self.paths.assets_dir
+    def assets_dir(self) -> str:
+        """Get the assets directory path as string."""
+        if hasattr(self, '_assets_dir'):
+            return self._assets_dir
+        elif hasattr(self, 'paths'):
+            return str(self.paths.assets_dir)
+        else:
+            raise AttributeError("Assets directory not set")
 
     def _generate_memo_filename(self, memo_id: str) -> str:
         """Generate a unique filename for a memo."""

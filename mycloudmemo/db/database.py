@@ -36,8 +36,11 @@ class MemoRecord:
     folder_id: str
     title: str
     file_name: str  # Relative path like "notes/2024-03/memo_12345.md"
+    memo_type: str  # rich_text, markdown, image
     is_synced: bool
     last_modified: str  # ISO format timestamp
+    created_at: str  # ISO format timestamp
+    updated_at: str  # ISO format timestamp
 
 
 class DatabaseManager:
@@ -58,15 +61,48 @@ class DatabaseManager:
         """Initialize the schema and seed required default records."""
 
         with self.connect() as connection:
+            # First, always create the schema for new databases
             try:
                 connection.executescript(SCHEMA_SQL)
                 connection.commit()
             except sqlite3.OperationalError as e:
-                if "no such column: sort_order" in str(e):
-                    # Handle migration for existing databases
-                    self._migrate_add_sort_order()
+                if "duplicate column name: updated_at" in str(e):
+                    # updated_at column already exists, update existing records
+                    self._migrate_update_updated_at()
                 else:
                     raise
+            
+            # Then check if columns need to be added (for existing databases)
+            # Check if memo_type column exists
+            try:
+                connection.execute("SELECT memo_type FROM memos LIMIT 1")
+            except sqlite3.OperationalError:
+                # memo_type column doesn't exist, add it
+                print("Adding memo_type column to memos table...")
+                self._migrate_add_memo_type()
+            
+            # Check if sort_order column exists in folders
+            try:
+                connection.execute("SELECT sort_order FROM folders LIMIT 1")
+            except sqlite3.OperationalError:
+                # sort_order column doesn't exist, add it
+                print("Adding sort_order column to folders table...")
+                self._migrate_add_sort_order()
+            
+            # Migrate existing root folder name from Notes to 모든 메모
+            self._migrate_root_folder_name()
+
+    def _migrate_root_folder_name(self) -> None:
+        """Migrate existing root folder name from Notes to 모든 메모."""
+        
+        with self.connect() as connection:
+            # Check if root folder exists with old name
+            cursor = connection.execute("SELECT id FROM folders WHERE id = 'root' AND name = 'Notes'")
+            if cursor.fetchone():
+                # Update the name
+                connection.execute("UPDATE folders SET name = '모든 메모' WHERE id = 'root'")
+                connection.commit()
+                print("Migrated root folder name from 'Notes' to '모든 메모'")
 
     def _migrate_add_sort_order(self) -> None:
         """Add sort_order column to existing folders table."""
@@ -93,6 +129,31 @@ class DatabaseManager:
             
             connection.commit()
 
+    def _migrate_update_updated_at(self) -> None:
+        """Update existing memos with updated_at values."""
+        
+        with self.connect() as connection:
+            # Update existing records to have updated_at = created_at
+            connection.execute("""
+                UPDATE memos 
+                SET updated_at = created_at 
+                WHERE updated_at IS NULL
+            """)
+            connection.commit()
+
+    def _migrate_add_memo_type(self) -> None:
+        """Add memo_type column to existing memos table."""
+        
+        with self.connect() as connection:
+            # Add memo_type column with default value
+            connection.execute("ALTER TABLE memos ADD COLUMN memo_type TEXT NOT NULL DEFAULT 'rich_text'")
+            
+            # Create index for memo_type
+            connection.execute("CREATE INDEX IF NOT EXISTS idx_memos_type ON memos(memo_type)")
+            
+            connection.commit()
+            print("Migrated database: added memo_type column to memos table")
+
     def fetch_folders(self) -> list[FolderRecord]:
         """Return folders ordered by sort_order within each parent."""
 
@@ -118,10 +179,10 @@ class DatabaseManager:
         """Return memos for a folder ordered by last modification time."""
 
         query = """
-            SELECT id, folder_id, title, file_name, is_synced, last_modified
+            SELECT id, folder_id, title, file_name, memo_type, is_synced, last_modified, created_at, updated_at
             FROM memos
             WHERE folder_id = ?
-            ORDER BY last_modified DESC, title COLLATE NOCASE
+            ORDER BY updated_at DESC, title COLLATE NOCASE
         """
         with self.connect() as connection:
             rows = connection.execute(query, (folder_id,)).fetchall()
@@ -131,8 +192,11 @@ class DatabaseManager:
                 folder_id=row["folder_id"],
                 title=row["title"],
                 file_name=row["file_name"],
+                memo_type=row["memo_type"] if "memo_type" in row.keys() else "rich_text",
                 is_synced=bool(row["is_synced"]),
                 last_modified=row["last_modified"],
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
             )
             for row in rows
         ]
@@ -141,7 +205,7 @@ class DatabaseManager:
         """Get single memo by ID."""
 
         query = """
-            SELECT id, folder_id, title, file_name, is_synced, last_modified
+            SELECT id, folder_id, title, file_name, memo_type, is_synced, last_modified, created_at, updated_at
             FROM memos WHERE id = ?
         """
         with self.connect() as connection:
@@ -152,24 +216,28 @@ class DatabaseManager:
                 folder_id=row["folder_id"],
                 title=row["title"],
                 file_name=row["file_name"],
+                memo_type=row["memo_type"] if "memo_type" in row.keys() else "rich_text",
                 is_synced=bool(row["is_synced"]),
                 last_modified=row["last_modified"],
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
             )
         return None
 
-    def create_memo(self, folder_id: str, title: str, file_name: str) -> str:
+    def create_memo(self, folder_id: str, title: str, file_name: str, memo_type: str = "rich_text") -> str:
         """Create a new memo record and return its ID."""
 
         memo_id = str(uuid.uuid4())
+        now = datetime.now().isoformat()
         
         query = """
-            INSERT INTO memos (id, folder_id, title, file_name, is_synced, last_modified)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO memos (id, folder_id, title, file_name, memo_type, is_synced, last_modified, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         with self.connect() as connection:
             connection.execute(query, (
-                memo_id, folder_id, title, file_name, False,
-                datetime.now().isoformat()
+                memo_id, folder_id, title, file_name, memo_type, False,
+                now, now, now
             ))
             connection.commit()
         return memo_id
@@ -179,13 +247,27 @@ class DatabaseManager:
 
         query = """
             UPDATE memos 
-            SET title = ?, is_synced = ?, last_modified = ?
+            SET title = ?, is_synced = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         """
         with self.connect() as connection:
-            cursor = connection.execute(query, (
-                title, is_synced, datetime.now().isoformat(), memo_id
-            ))
+            cursor = connection.execute(query, (title, is_synced, memo_id))
+            connection.commit()
+        return cursor.rowcount > 0
+
+    def update_memo(self, memo_id: str, title: str | None = None, is_synced: bool = False) -> bool:
+        """Update memo title and sync status."""
+        
+        if title is None:
+            return False
+            
+        query = """
+            UPDATE memos 
+            SET title = ?, is_synced = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """
+        with self.connect() as connection:
+            cursor = connection.execute(query, (title, is_synced, memo_id))
             connection.commit()
         return cursor.rowcount > 0
 
@@ -210,7 +292,7 @@ class DatabaseManager:
         """Get all memos that need to be synced."""
 
         query = """
-            SELECT id, folder_id, title, file_name, is_synced, last_modified
+            SELECT id, folder_id, title, file_name, memo_type, is_synced, last_modified, created_at, updated_at
             FROM memos WHERE is_synced = 0
             ORDER BY last_modified DESC
         """
@@ -222,8 +304,11 @@ class DatabaseManager:
                 folder_id=row["folder_id"],
                 title=row["title"],
                 file_name=row["file_name"],
+                memo_type=row["memo_type"] if "memo_type" in row.keys() else "rich_text",
                 is_synced=bool(row["is_synced"]),
-                last_modified=row["last_modified"]
+                last_modified=row["last_modified"],
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
             )
             for row in rows
         ]
@@ -238,9 +323,19 @@ class DatabaseManager:
     def create_folder(self, name: str, parent_id: str | None = None) -> str:
         """Create a new folder and return its ID."""
 
+        # Prevent creating subfolders under root folder
+        if parent_id == "root":
+            raise ValueError("Cannot create subfolders under '모든 메모' folder")
+
         folder_id = str(uuid.uuid4())
         # Get the next sort order for this parent
         sort_order = self._get_next_sort_order(parent_id)
+        
+        # Create root folder if it doesn't exist
+        query = "INSERT OR IGNORE INTO folders (id, parent_id, name) VALUES ('root', NULL, '모든 메모')"
+        with self.connect() as connection:
+            connection.execute(query)
+        
         query = "INSERT INTO folders (id, parent_id, name, sort_order) VALUES (?, ?, ?, ?)"
         with self.connect() as connection:
             connection.execute(query, (folder_id, parent_id, name, sort_order))
@@ -347,3 +442,53 @@ class DatabaseManager:
         
         collect_subfolders(folder_id)
         return subfolder_ids
+
+    def count_subfolders(self, folder_id: str) -> int:
+        """Count direct subfolders for a given folder."""
+        
+        with self.connect() as connection:
+            cursor = connection.execute("SELECT COUNT(*) FROM folders WHERE parent_id = ?", (folder_id,))
+            return cursor.fetchone()[0]
+
+    def fetch_all_memos(self) -> list[MemoRecord]:
+        """Return all memos from all folders ordered by last modification time."""
+
+        query = """
+            SELECT id, folder_id, title, file_name, memo_type, is_synced, last_modified, created_at, updated_at
+            FROM memos
+            ORDER BY updated_at DESC, title COLLATE NOCASE
+        """
+        with self.connect() as connection:
+            rows = connection.execute(query).fetchall()
+        return [
+            MemoRecord(
+                id=row["id"],
+                folder_id=row["folder_id"],
+                title=row["title"],
+                file_name=row["file_name"],
+                memo_type=row["memo_type"] if "memo_type" in row.keys() else "rich_text",
+                is_synced=bool(row["is_synced"]),
+                last_modified=row["last_modified"],
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
+            )
+            for row in rows
+        ]
+
+    def count_memos_in_folder(self, folder_id: str) -> int:
+        """Count memos in a given folder."""
+        
+        with self.connect() as connection:
+            cursor = connection.execute("SELECT COUNT(*) FROM memos WHERE folder_id = ?", (folder_id,))
+            return cursor.fetchone()[0]
+
+    def move_memo(self, memo_id: str, folder_id: str, sort_order: int) -> bool:
+        """Move a memo to a different folder and/or change its sort order."""
+        
+        query = """UPDATE memos 
+                   SET folder_id = ?, sort_order = ?, is_synced = 0, updated_at = CURRENT_TIMESTAMP 
+                   WHERE id = ?"""
+        with self.connect() as connection:
+            cursor = connection.execute(query, (folder_id, sort_order, memo_id))
+            connection.commit()
+        return cursor.rowcount > 0

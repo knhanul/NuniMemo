@@ -9,27 +9,26 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-APP_NAME = "MyCloudMemo"
-DRIVE_ROOT_FOLDER_NAME = "MyCloudMemo"
+APP_NAME = "NuniMemo"
+WORKSPACE_CONFIG_KEY = "workspace_path"
+DEFAULT_FOLDER_CONFIG_KEY = "default_folder_id"
 DEFAULT_CONFIG_FILE = "config.json"
 
 
 @dataclass(frozen=True)
 class AppPaths:
-    """Resolved application paths under the user's AppData directory."""
+    """Resolved application paths under the user's selected Workspace folder."""
 
     base_dir: Path
     notes_dir: Path
     assets_dir: Path
     config_dir: Path
     database_path: Path
-    token_path: Path
-    credentials_path: Path
     config_file: Path
 
 
 def get_default_app_data_dir() -> Path:
-    """Return the default base application data directory."""
+    """Return the default base application data directory (for config only)."""
     appdata = os.getenv("APPDATA")
     if not appdata:
         appdata = str(Path.home() / "AppData" / "Roaming")
@@ -39,7 +38,7 @@ def get_default_app_data_dir() -> Path:
 def load_config(config_path: Path | None = None) -> dict[str, Any]:
     """Load configuration from config.json."""
     if config_path is None:
-        config_path = get_default_app_data_dir() / "config" / DEFAULT_CONFIG_FILE
+        config_path = get_default_app_data_dir() / DEFAULT_CONFIG_FILE
     
     if config_path.exists():
         try:
@@ -54,7 +53,7 @@ def load_config(config_path: Path | None = None) -> dict[str, Any]:
 def save_config(config: dict[str, Any], config_path: Path | None = None) -> bool:
     """Save configuration to config.json."""
     if config_path is None:
-        config_path = get_default_app_data_dir() / "config" / DEFAULT_CONFIG_FILE
+        config_path = get_default_app_data_dir() / DEFAULT_CONFIG_FILE
     
     try:
         config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -66,32 +65,48 @@ def save_config(config: dict[str, Any], config_path: Path | None = None) -> bool
         return False
 
 
-def get_storage_path_from_config() -> Path:
-    """Get storage path from config or use default."""
+def get_workspace_path() -> Path | None:
+    """Get the current workspace path from config, or None if not configured."""
     config = load_config()
-    custom_path = config.get("storage_path")
+    workspace_path = config.get(WORKSPACE_CONFIG_KEY)
     
-    if custom_path and Path(custom_path).exists():
-        return Path(custom_path)
+    if workspace_path and Path(workspace_path).exists():
+        return Path(workspace_path)
     
-    return get_default_app_data_dir()
+    # No valid workspace configured
+    return None
+
+
+def set_workspace_path(path: str | Path) -> bool:
+    """Set the workspace path in config."""
+    path = Path(path)
+    if not path.exists():
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            print(f"Failed to create workspace directory: {e}")
+            return False
+    
+    config = load_config()
+    config[WORKSPACE_CONFIG_KEY] = str(path.resolve())
+    return save_config(config)
 
 
 def get_app_paths() -> AppPaths:
-    """Build and return the application path collection."""
-
-    base_dir = get_storage_path_from_config()
-    default_dir = get_default_app_data_dir()
+    """Build and return the application path collection based on workspace."""
+    workspace = get_workspace_path()
+    if workspace is None:
+        raise RuntimeError("Workspace not configured. Please select a workspace folder.")
+    
+    config_dir = get_default_app_data_dir()
     
     return AppPaths(
-        base_dir=base_dir,
-        notes_dir=base_dir / "notes",
-        assets_dir=base_dir / "assets",
-        config_dir=default_dir / "config",
-        database_path=base_dir / "memo.db",
-        token_path=default_dir / "config" / "token.json",
-        credentials_path=default_dir / "config" / "client_secret.json",
-        config_file=default_dir / "config" / DEFAULT_CONFIG_FILE,
+        base_dir=workspace,
+        notes_dir=workspace / "notes",
+        assets_dir=workspace / "assets",
+        config_dir=config_dir,
+        database_path=workspace / "memo.db",
+        config_file=config_dir / DEFAULT_CONFIG_FILE,
     )
 
 
@@ -167,14 +182,12 @@ def migrate_data_to_new_location(old_base: Path, new_base: Path) -> bool:
         return False
 
 
-def change_storage_path(new_path: str | Path, migrate: bool = True) -> bool:
-    """Change storage path and optionally migrate existing data."""
+def change_workspace_path(new_path: str | Path, migrate: bool = True) -> bool:
+    """Change workspace path and optionally migrate existing data."""
     new_path = Path(new_path)
     
-    # Get current path
-    current_config = load_config()
-    old_path_str = current_config.get("storage_path")
-    old_path = Path(old_path_str) if old_path_str else get_default_app_data_dir()
+    # Get current workspace path
+    old_path = get_workspace_path()
     
     # Check if path is actually changing
     if old_path.resolve() == new_path.resolve():
@@ -182,22 +195,37 @@ def change_storage_path(new_path: str | Path, migrate: bool = True) -> bool:
         return True
     
     # Ensure new path exists
-    new_path.mkdir(parents=True, exist_ok=True)
+    try:
+        new_path.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        print(f"Failed to create workspace directory: {e}")
+        return False
     
-    # Migrate data if requested
-    if migrate and old_path.exists():
+    # Migrate data if requested and old path exists
+    if migrate and old_path.exists() and str(old_path) != "":
         if not migrate_data_to_new_location(old_path, new_path):
             return False
     
     # Update config
-    current_config["storage_path"] = str(new_path.resolve())
-    if save_config(current_config):
-        print(f"Storage path changed to: {new_path}")
-        return True
-    
-    return False
+    return set_workspace_path(new_path)
 
 
 def get_storage_path() -> Path:
-    """Get current storage path."""
-    return get_storage_path_from_config()
+    """Get current workspace path."""
+    return get_workspace_path()
+
+
+def get_default_folder_id() -> str | None:
+    """Get the default folder ID from config, or None if not set."""
+    config = load_config()
+    return config.get(DEFAULT_FOLDER_CONFIG_KEY)
+
+
+def set_default_folder_id(folder_id: str | None) -> bool:
+    """Set the default folder ID in config."""
+    config = load_config()
+    if folder_id:
+        config[DEFAULT_FOLDER_CONFIG_KEY] = folder_id
+    else:
+        config.pop(DEFAULT_FOLDER_CONFIG_KEY, None)
+    return save_config(config)

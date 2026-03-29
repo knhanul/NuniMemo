@@ -1,0 +1,105 @@
+/* Tab Styling */
+
+/* Tab container - multi-line support */
+#tab-bar {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+#tab-bar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+#tab-bar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#tab-bar::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 3px;
+}
+
+/* Individual tab styling */
+.tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    max-width: 150px;
+    min-width: 60px;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.tab:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.tab.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+.tab.active .tab-title {
+    color: white;
+}
+
+.tab.active .tab-close {
+    color: white;
+}
+
+.tab.active .tab-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Tab title with ellipsis */
+.tab-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 120px;
+    min-width: 0;
+    flex: 1;
+    color: #475569;
+}
+
+/* Tab close button */
+.tab-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #64748b;
+    flex-shrink: 0;
+    padding: 0;
+    margin-left: 2px;
+}
+
+/* Folder Drag & Drop Styling */
+
+/* Dragging state */
+.dragging {
+    opacity: 0.5;
+    background: #f1f5f9;
+}
+
+/* Drop target indicator */
+.drag-over {
+    background: #dbeafe !important;
+    border: 2px dashed #3b82f6 !important;
+    border-radius: 6px;
+}
+

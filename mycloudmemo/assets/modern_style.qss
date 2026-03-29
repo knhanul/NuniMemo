@@ -1,0 +1,472 @@
+/* Apple-inspired Modern UI Theme for NuniMemo */
+
+/* ========================================================================== */
+/* 전역 설정 및 기본 컬러 테마 */
+/* ========================================================================== */
+
+QMainWindow {
+    background-color: #f5f5f7;
+    color: #1d1d1f;
+}
+
+QWidget {
+    background-color: transparent;
+    color: #1d1d1f;
+    font-family: "SF Pro Display", "Apple SD Gothic Neo", "Segoe UI", "Helvetica Neue", sans-serif;
+    font-size: 14px;
+}
+
+/* ========================================================================== */
+/* macOS 스타일 스크롤바 - 얇고 둥근 테두리, 투명 배경 */
+/* ========================================================================== */
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 8px;
+    margin: 0px;
+    border: none;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(0, 0, 0, 0.2);
+    min-height: 20px;
+    border-radius: 4px;
+    border: none;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+QScrollBar::handle:vertical:pressed {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+    border: none;
+    background: none;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 8px;
+    margin: 0px;
+    border: none;
+}
+
+QScrollBar::handle:horizontal {
+    background: rgba(0, 0, 0, 0.2);
+    min-width: 20px;
+    border-radius: 4px;
+    border: none;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+QScrollBar::handle:horizontal:pressed {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {
+    width: 0px;
+    border: none;
+    background: none;
+}
+
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {
+    background: none;
+}
+
+/* ========================================================================== */
+/* QTreeWidget - VSCode Explorer 스타일 */
+/* ========================================================================== */
+
+QTreeWidget {
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 0px;
+    alternate-background-color: transparent;
+    show-decoration-selected: 0;
+}
+
+QTreeWidget::item {
+    border-radius: 0px;
+    padding: 4px 8px;
+    margin: 0px;
+    color: #1d1d1f;
+    background: transparent;
+    border: none;
+    min-height: 24px;
+}
+
+QTreeWidget::item:hover {
+    background: rgba(0, 0, 0, 0.04);
+    border: none;
+}
+
+QTreeWidget::item:selected {
+    background: rgba(0, 122, 255, 0.12);
+    border: none;
+    color: #1d1d1f;
+}
+
+QTreeWidget::item:selected:hover {
+    background: rgba(0, 122, 255, 0.16);
+    border: none;
+}
+
+QTreeWidget::branch {
+    background: transparent;
+}
+
+QTreeWidget::branch:has-children:!has-siblings:closed,
+QTreeWidget::branch:closed:has-children:has-siblings {
+    border-image: none;
+    image: url(assets/folder-closed.svg);
+}
+
+QTreeWidget::branch:open:has-children:!has-siblings,
+QTreeWidget::branch:open:has-children:has-siblings {
+    border-image: none;
+    image: url(assets/folder-open.svg);
+}
+
+/* 트리 위젯 인디케이터 (접기/펼치기) VSCode 스타일 */
+QTreeWidget::branch:has-children:!has-siblings:closed,
+QTreeWidget::branch:closed:has-children:has-siblings {
+    border-image: none;
+    background: transparent;
+    padding-left: 4px;
+}
+
+QTreeWidget::branch:open:has-children:!has-siblings,
+QTreeWidget::branch:open:has-children:has-siblings {
+    border-image: none;
+    background: transparent;
+    padding-left: 4px;
+}
+
+/* ========================================================================== */
+/* QListWidget - iOS 스타일 둥근 선택 배경 */
+/* ========================================================================== */
+
+QListWidget {
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 8px;
+    alternate-background-color: transparent;
+}
+
+QListWidget::item {
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin: 4px 0px;
+    color: #1d1d1f;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+QListWidget::item:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+QListWidget::item:selected {
+    background: rgba(0, 122, 255, 0.15);
+    border: 1px solid rgba(0, 122, 255, 0.3);
+    color: #1d1d1f;
+}
+
+QListWidget::item:selected:hover {
+    background: rgba(0, 122, 255, 0.2);
+    border: 1px solid rgba(0, 122, 255, 0.4);
+}
+
+/* ========================================================================== */
+/* QTextEdit - 세련된 에디터 스타일 */
+/* ========================================================================== */
+
+QTextEdit {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-family: "SF Pro Text", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1d1d1f;
+    selection-background-color: rgba(0, 122, 255, 0.3);
+}
+
+QTextEdit:focus {
+    border: 1px solid rgba(0, 122, 255, 0.5);
+    outline: none;
+}
+
+/* ========================================================================== */
+/* QPushButton - Apple 스타일 버튼 */
+/* ========================================================================== */
+
+QPushButton {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1d1d1f;
+}
+
+QPushButton:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+QPushButton:pressed {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+QPushButton:focus {
+    border: 1px solid rgba(0, 122, 255, 0.5);
+    outline: none;
+}
+
+/* 아이콘 버튼 - 작고 컴팩트한 스타일 */
+QPushButton[iconButton="true"],
+QPushButton#addFolderButton,
+QPushButton#folderDeleteButton,
+QPushButton#addMemoButton,
+QPushButton#memoDeleteButton,
+QPushButton#settingsButton,
+QPushButton#syncButton {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    min-width: 20px;
+    min-height: 20px;
+    max-width: 20px;
+    max-height: 20px;
+    padding: 2px;
+}
+
+QPushButton[iconButton="true"]:hover,
+QPushButton#addFolderButton:hover,
+QPushButton#folderDeleteButton:hover,
+QPushButton#addMemoButton:hover,
+QPushButton#memoDeleteButton:hover,
+QPushButton#settingsButton:hover,
+QPushButton#syncButton:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+QPushButton[iconButton="true"]:pressed,
+QPushButton#addFolderButton:pressed,
+QPushButton#folderDeleteButton:pressed,
+QPushButton#addMemoButton:pressed,
+QPushButton#memoDeleteButton:pressed,
+QPushButton#settingsButton:pressed,
+QPushButton#syncButton:pressed {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================================================== */
+/* QLabel - 레이블 스타일 */
+/* ========================================================================== */
+
+QLabel {
+    color: #1d1d1f;
+    background: transparent;
+    font-weight: 500;
+}
+
+QLabel#currentFolderLabel,
+QLabel#syncStatusLabel {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1d1d1f;
+}
+
+/* ========================================================================== */
+/* QSplitter - 분할자 스타일 */
+/* ========================================================================== */
+
+QSplitter::handle {
+    background: rgba(0, 0, 0, 0.1);
+    border: none;
+}
+
+QSplitter::handle:horizontal {
+    width: 1px;
+}
+
+QSplitter::handle:vertical {
+    height: 1px;
+}
+
+/* ========================================================================== */
+/* QFrame - 프레임 및 카드 스타일 */
+/* ========================================================================== */
+
+QFrame {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+}
+
+#sidebar {
+    background: rgba(255, 255, 255, 0.95);
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+#folderHeader,
+#memoHeader {
+    background: rgba(248, 248, 250, 0.95);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+#editorPanel {
+    background: #f5f5f7;
+}
+
+#editorHeader {
+    background: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* ========================================================================== */
+/* QLineEdit - 입력 필드 스타일 */
+/* ========================================================================== */
+
+QLineEdit {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    color: #1d1d1f;
+}
+
+QLineEdit:focus {
+    border: 1px solid rgba(0, 122, 255, 0.5);
+    outline: none;
+}
+
+/* ========================================================================== */
+/* QDialog - 다이얼로그 스타일 */
+/* ========================================================================== */
+
+QDialog {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+}
+
+QDialogButtonBox QPushButton {
+    background: rgba(0, 122, 255, 0.8);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 500;
+}
+
+QDialogButtonBox QPushButton:hover {
+    background: rgba(0, 122, 255, 0.9);
+}
+
+QDialogButtonBox QPushButton:pressed {
+    background: rgba(0, 122, 255, 1);
+}
+
+/* ========================================================================== */
+/* QCheckBox - 체크박스 스타일 */
+/* ========================================================================== */
+
+QCheckBox {
+    color: #1d1d1f;
+    spacing: 8px;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.8);
+}
+
+QCheckBox::indicator:hover {
+    border: 2px solid rgba(0, 122, 255, 0.5);
+}
+
+QCheckBox::indicator:checked {
+    background: rgba(0, 122, 255, 0.8);
+    border: 2px solid rgba(0, 122, 255, 0.8);
+}
+
+/* ========================================================================== */
+/* QSpinBox - 스핀박스 스타일 */
+/* ========================================================================== */
+
+QSpinBox {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+QSpinBox:focus {
+    border: 1px solid rgba(0, 122, 255, 0.5);
+}
+
+QSpinBox::up-button,
+QSpinBox::down-button {
+    border: none;
+    background: transparent;
+    width: 20px;
+}
+
+QSpinBox::up-button:hover,
+QSpinBox::down-button:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* ========================================================================== */
+/* 특수 효과 및 애니메이션 */
+/* ========================================================================== */
+
+/* 부드러운 전환 효과 */
+* {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* 포커스 아웃라인 - Apple 스타일 옅은 파란색 */
+*:focus {
+    outline: 2px solid rgba(0, 122, 255, 0.3);
+    outline-offset: 2px;
+}
+
+/* 툴팁 스타일 */
+QToolTip {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+}

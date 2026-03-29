@@ -1,4 +1,4 @@
-"""Qt application bootstrap for MyCloudMemo."""
+"""Qt application bootstrap for NuniMemo."""
 
 from __future__ import annotations
 
@@ -8,10 +8,11 @@ import sys
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
 
-from mycloudmemo.config import ensure_app_directories, get_app_paths
+from mycloudmemo.config import ensure_app_directories, get_app_paths, get_workspace_path
 from mycloudmemo.db.database import DatabaseManager
 from mycloudmemo.sync.enhanced_manager import EnhancedSyncManager
 from mycloudmemo.ui.main_window import MainWindow
+from mycloudmemo.ui.workspace_dialog import show_workspace_selector
 
 try:
     from qt_material import apply_stylesheet
@@ -132,16 +133,24 @@ QLabel[muted="true"] {
 """
 
 
-def configure_application() -> tuple[QApplication, DatabaseManager, SyncManager]:
+def configure_application() -> tuple[QApplication, DatabaseManager, EnhancedSyncManager] | None:
     """Create and configure core application services."""
 
     app = QApplication(sys.argv)
-    app.setApplicationName("MyCloudMemo")
+    app.setApplicationName("NuniMemo")
     app.setQuitOnLastWindowClosed(False)
 
     if apply_stylesheet is not None:
         apply_stylesheet(app, theme="light_blue.xml")
     app.setStyleSheet(APP_STYLESHEET)
+
+    # Check if workspace is configured
+    if get_workspace_path() is None:
+        # Show workspace selector dialog
+        workspace_path = show_workspace_selector(app)
+        if workspace_path is None:
+            # User cancelled - exit application
+            return None
 
     paths = ensure_app_directories(get_app_paths())
     database = DatabaseManager(paths.database_path)
@@ -161,7 +170,12 @@ def main() -> int:
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    app, database, sync_manager = configure_application()
+    result = configure_application()
+    if result is None:
+        # User cancelled workspace selection
+        return 0
+    
+    app, database, sync_manager = result
     
     # Create main window
     window = MainWindow(database=database, sync_manager=sync_manager)

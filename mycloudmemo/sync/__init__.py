@@ -1,1 +1,0 @@
-"""Synchronization package for MyCloudMemo."""

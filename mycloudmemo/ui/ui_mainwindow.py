@@ -18,8 +18,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QHeaderView,
     QLabel, QListWidget, QListWidgetItem, QMainWindow,
     QPushButton, QSizePolicy, QSpacerItem, QSplitter,
-    QStatusBar, QTextEdit, QTreeWidget, QTreeWidgetItem,
-    QVBoxLayout, QWidget)
+    QStatusBar, QTextEdit, QVBoxLayout, QWidget, QTreeWidget, QTreeWidgetItem)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -98,6 +97,26 @@ class Ui_MainWindow(object):
 
         self.folderHeaderLayout.addWidget(self.addFolderButton)
 
+        self.folderDeleteButton = QPushButton(self.folderHeader)
+        self.folderDeleteButton.setObjectName(u"folderDeleteButton")
+        self.folderDeleteButton.setMinimumSize(QSize(28, 28))
+        self.folderDeleteButton.setMaximumSize(QSize(28, 28))
+        self.folderDeleteButton.setStyleSheet(u"QPushButton {\n"
+"    background-color: transparent;\n"
+"    border: 1px solid #e2e8f0;\n"
+"    border-radius: 6px;\n"
+"}\n"
+"QPushButton:hover {\n"
+"    background-color: #f8fafc;\n"
+"    border: 1px solid #cbd5e1;\n"
+"}\n"
+"QPushButton:pressed {\n"
+"    background-color: #e2e8f0;\n"
+"    color: #475569;\n"
+"}")
+
+        self.folderHeaderLayout.addWidget(self.folderDeleteButton)
+
 
         self.sidebarLayout.addWidget(self.folderHeader)
 
@@ -173,6 +192,26 @@ class Ui_MainWindow(object):
 "}")
 
         self.memoHeaderLayout.addWidget(self.addMemoButton)
+
+        self.memoDeleteButton = QPushButton(self.memoHeader)
+        self.memoDeleteButton.setObjectName(u"memoDeleteButton")
+        self.memoDeleteButton.setMinimumSize(QSize(28, 28))
+        self.memoDeleteButton.setMaximumSize(QSize(28, 28))
+        self.memoDeleteButton.setStyleSheet(u"QPushButton {\n"
+"    background-color: transparent;\n"
+"    border: 1px solid #e2e8f0;\n"
+"    border-radius: 6px;\n"
+"    color: #64748b;\n"
+"    font-size: 16px;\n"
+"    font-weight: 500;\n"
+"}\n"
+"QPushButton:hover {\n"
+"    background-color: #f1f5f9;\n"
+"    border-color: #94a3b8;\n"
+"    color: #475569;\n"
+"}")
+
+        self.memoHeaderLayout.addWidget(self.memoDeleteButton)
 
 
         self.sidebarLayout.addWidget(self.memoHeader)
@@ -330,15 +369,16 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"\ub204\ub2c8\uba54\ubaa8", None))
         self.folderLabel.setText(QCoreApplication.translate("MainWindow", u"\ud3f4\ub354", None))
         self.addFolderButton.setText(QCoreApplication.translate("MainWindow", u"+", None))
+        self.folderDeleteButton.setText(QCoreApplication.translate("MainWindow", u"🗑", None))
         self.memoLabel.setText(QCoreApplication.translate("MainWindow", u"\uba54\ubaa8", None))
         self.addMemoButton.setText(QCoreApplication.translate("MainWindow", u"+", None))
+        self.memoDeleteButton.setText(QCoreApplication.translate("MainWindow", u"🗑", None))
         self.logoLabel.setText(QCoreApplication.translate("MainWindow", u"\U0001f4dd", None))
         self.currentFolderLabel.setText(QCoreApplication.translate("MainWindow", u"\ud3f4\ub354: \uba54\ubaa8", None))
         self.settingsButton.setText(QCoreApplication.translate("MainWindow", u"\u2699\ufe0f", None))
         self.syncButton.setText(QCoreApplication.translate("MainWindow", u"\U0001f504", None))
-        self.syncStatusLabel.setText(QCoreApplication.translate("MainWindow", u"\u25cf \ub85c\uceec", None))
+        self.syncStatusLabel.setText(QCoreApplication.translate("MainWindow", u"\ub3d9\uae30\ud654 \uc0c1\ud0dc", None))
         self.editor.setPlaceholderText(QCoreApplication.translate("MainWindow", u"\uc5ec\uae30\uc5d0 \uba54\ubaa8\ub97c \uc791\uc131\ud558\uc138\uc694...\n"
 "\n"
 "\ud301: Ctrl+V\ub85c \ud074\ub9bd\ubcf4\ub4dc \uc774\ubbf8\uc9c0\ub97c \ubc14\ub85c \ubd99\uc5ec\ub123\uc744 \uc218 \uc788\uc2b5\ub2c8\ub2e4.", None))
     # retranslateUi
-
