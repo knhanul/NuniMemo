@@ -190,9 +190,9 @@ def change_workspace_path(new_path: str | Path, migrate: bool = True) -> bool:
     old_path = get_workspace_path()
     
     # Check if path is actually changing
-    if old_path.resolve() == new_path.resolve():
-        print("New path is same as current path, no change needed")
-        return True
+    if old_path and old_path.resolve() == new_path.resolve():
+        print("선택한 경로는 현재 저장 위치와 동일합니다.")
+        return False  # Return False to indicate no change was made
     
     # Ensure new path exists
     try:

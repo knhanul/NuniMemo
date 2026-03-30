@@ -609,8 +609,11 @@ class WebMemoAPI:
             old_base = Path(old_base)
             
             # Don't migrate if same path
+            print(f"Debug: old_base = {old_base.resolve()}")
+            print(f"Debug: new_base = {new_base.resolve()}")
+            print(f"Debug: are they equal? {old_base.resolve() == new_base.resolve()}")
             if old_base.resolve() == new_base.resolve():
-                return json.dumps({"success": False, "error": "New path is same as current path"})
+                return json.dumps({"success": False, "error": "선택한 경로는 현재 저장 위치와 동일합니다."})
             
             # Create new storage structure
             new_notes_dir = new_base / "notes"

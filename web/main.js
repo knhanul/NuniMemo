@@ -203,7 +203,7 @@ function saveTabContent(tabId) {
     const text = markdown.trim();
     const firstLine = text.split('\n')[0] || '';
     // Remove Markdown heading markers for title
-    const title = firstLine.replace(/^#+\s*/, '').substring(0, 30) || '제목 없음';
+    const title = firstLine.replace(/^#+\s*/, '').substring(0, 30) || '';
     
     // Update title in tab state and UI
     tab.title = title;
@@ -237,7 +237,7 @@ function updateTabTitle(tabId) {
         const markdown = getEditorMarkdown();
         const firstLine = markdown.split('\n')[0] || '';
         // Remove Markdown heading markers for title
-        const title = firstLine.replace(/^#+\s*/, '').substring(0, 30) || '제목 없음';
+        const title = firstLine.replace(/^#+\s*/, '').substring(0, 30) || '';
         console.log('Markdown content:', markdown.substring(0, 100));
         console.log('First line:', firstLine);
         console.log('New title:', title);
@@ -1234,8 +1234,14 @@ function updateMemoLocation(memo) {
 }
 
 async function createMemo() {
+    // Prevent creating memo in root folder
+    if (state.currentFolderId === 'root') {
+        showError('모든 메모 폴더에는 메모를 생성할 수 없습니다. 먼저 특정 폴더를 선택해주세요.');
+        return;
+    }
+    
     // Directly create markdown memo without type selection
-    const response = await callApi('create_memo', state.currentFolderId, '새 메모', 'markdown');
+    const response = await callApi('create_memo', state.currentFolderId, '', 'markdown');
     if (response.success) {
         await loadMemos(state.currentFolderId);
         // Set the new memo as current and select it
@@ -1643,7 +1649,12 @@ function handleMigrationResult(response, newPath) {
         alert('저장 폴더가 성공적으로 변경되었습니다.\n앱을 다시 시작해야 변경사항이 완전히 적용됩니다.');
         hideSettingsModal();
     } else {
-        showError('저장 폴더 변경에 실패했습니다: ' + (response.error || 'Unknown error'));
+        // Handle specific error for same path
+        if (response.error && response.error.includes('동일합니다')) {
+            alert('선택한 경로는 현재 저장 위치와 동일합니다.');
+        } else {
+            showError('저장 폴더 변경에 실패했습니다: ' + (response.error || 'Unknown error'));
+        }
     }
 }
 

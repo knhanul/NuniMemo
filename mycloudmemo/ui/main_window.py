@@ -1481,7 +1481,7 @@ class MainWindow(QMainWindow):
             self._set_editor_content("")
             return
 
-        initial_title = self.editor.toPlainText().split('\n')[0].strip() or "새 메모"
+        initial_title = self.editor.toPlainText().split('\n')[0].strip() or ""
         initial_content = self._serialize_editor_content()
         
         try:
@@ -1550,7 +1550,7 @@ class MainWindow(QMainWindow):
             )
             
             # Update database metadata
-            first_line = plain_text_content.split('\n')[0].strip() or "새 메모"
+            first_line = plain_text_content.split('\n')[0].strip() or ""
             self.database.update_memo_metadata(
                 self.current_memo.id, 
                 title=first_line,
@@ -1711,7 +1711,7 @@ class MainWindow(QMainWindow):
             # Create database record
             memo_id = self.database.create_memo(
                 self.current_folder_id,
-                title="새 메모",
+                title="",
                 file_name=file_name
             )
             print(f"Created new memo: {memo_id}")
@@ -2092,7 +2092,8 @@ class MainWindow(QMainWindow):
                 )
                 
                 if reply == QMessageBox.StandardButton.Yes:
-                    if change_workspace_path(new_path, migrate=migrate):
+                    result = change_workspace_path(new_path, migrate=migrate)
+                    if result:
                         QMessageBox.information(
                             self,
                             "저장 위치 변경 완료",
@@ -2100,11 +2101,20 @@ class MainWindow(QMainWindow):
                             "앱을 다시 시작하면 새 위치가 적용됩니다."
                         )
                     else:
-                        QMessageBox.warning(
-                            self,
-                            "변경 실패",
-                            "저장 위치 변경 중 오류가 발생했습니다."
-                        )
+                        # Check if it's because paths are the same
+                        old_path = get_workspace_path()
+                        if old_path and old_path.resolve() == Path(new_path).resolve():
+                            QMessageBox.information(
+                                self,
+                                "동일한 경로",
+                                f"선택한 경로는 현재 저장 위치와 동일합니다.\n\n현재 위치: {old_path}"
+                            )
+                        else:
+                            QMessageBox.warning(
+                                self,
+                                "변경 실패",
+                                "저장 위치 변경 중 오류가 발생했습니다."
+                            )
 
     def _quit_application(self) -> None:
         """Terminate the application explicitly from the tray or toolbar."""
