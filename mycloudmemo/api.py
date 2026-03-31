@@ -11,6 +11,8 @@ from typing import Any
 
 from mycloudmemo.db.database import DatabaseManager
 from mycloudmemo.storage.file_manager import FileStorageManager
+from mycloudmemo.export_import import export_workspace, import_workspace
+from mycloudmemo.config import get_workspace_path
 
 
 class WebMemoAPI:
@@ -116,6 +118,22 @@ class WebMemoAPI:
         """
         try:
             success = self.database.move_folder(folder_id, new_parent_id, sort_order)
+            return json.dumps({"success": success})
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e)})
+
+    def rename_folder(self, folder_id: str, new_name: str) -> str:
+        """Rename a folder.
+        
+        Args:
+            folder_id: Folder to rename
+            new_name: New folder name
+            
+        Returns:
+            JSON string with success status.
+        """
+        try:
+            success = self.database.rename_folder(folder_id, new_name)
             return json.dumps({"success": success})
         except Exception as e:
             return json.dumps({"success": False, "error": str(e)})
@@ -570,17 +588,21 @@ class WebMemoAPI:
         except Exception as e:
             return json.dumps({"success": False, "error": str(e)})
 
-    def migrate_storage(self, new_path: str, overwrite: bool = False) -> str:
+    def migrate_storage(self, new_path: str, overwrite: bool = False, migrate_data: bool = True) -> str:
         """Migrate all memo data to new storage location.
         
         Args:
             new_path: New storage folder path
             overwrite: If True, allow overwriting existing data
+            migrate_data: If True, migrate existing data; if False, start fresh
             
         Returns:
             JSON string with success status.
         """
         try:
+            import shutil
+            import sqlite3
+            
             new_base = Path(new_path)
             
             # Validate new path
@@ -609,9 +631,6 @@ class WebMemoAPI:
             old_base = Path(old_base)
             
             # Don't migrate if same path
-            print(f"Debug: old_base = {old_base.resolve()}")
-            print(f"Debug: new_base = {new_base.resolve()}")
-            print(f"Debug: are they equal? {old_base.resolve() == new_base.resolve()}")
             if old_base.resolve() == new_base.resolve():
                 return json.dumps({"success": False, "error": "선택한 경로는 현재 저장 위치와 동일합니다."})
             
@@ -625,27 +644,29 @@ class WebMemoAPI:
                 existing_memos = 0
                 if new_db_path.exists():
                     try:
-                        import sqlite3
-                        conn = sqlite3.connect(new_db_path)
-                        cursor = conn.execute("SELECT COUNT(*) FROM memos")
-                        existing_memos = cursor.fetchone()[0]
-                        conn.close()
+                        with sqlite3.connect(new_db_path) as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("SELECT COUNT(*) FROM memos")
+                            existing_memos = cursor.fetchone()[0]
                     except:
-                        existing_memos = "?"
+                        pass
+                
+                existing_files = 0
+                if new_notes_dir.exists():
+                    existing_files = len(list(new_notes_dir.rglob("*.md")))
                 
                 if not overwrite:
-                    # Ask user if they want to merge/overwrite existing data
+                    # Just checking for conflicts, don't do anything
                     return json.dumps({
                         "success": False, 
-                        "error": f"Target folder already contains {existing_memos} existing memos. This will merge/overwrite existing data. Please backup the target folder first if needed."
+                        "error": f"Target folder already contains {existing_memos} memos and {existing_files} files. Use overwrite option to proceed."
                     })
             
-            # Copy database file
-            if old_base.exists():
+            # Only migrate data if actually proceeding (overwrite=True)
+            if migrate_data:
+                # Copy database
                 old_db_path = old_base / "memo.db"
                 if old_db_path.exists():
-                    import shutil
-                    new_db_path.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(old_db_path, new_db_path)
                 
                 # Copy notes directory
@@ -658,6 +679,10 @@ class WebMemoAPI:
                 if old_assets_dir.exists():
                     new_assets_dir = new_base / "assets"
                     shutil.copytree(old_assets_dir, new_assets_dir, dirs_exist_ok=True)
+            else:
+                # Create empty structure for fresh start
+                new_notes_dir.mkdir(parents=True, exist_ok=True)
+                new_base.mkdir(parents=True, exist_ok=True)
             
             # Save configuration for next startup
             config_path = Path.home() / ".nunimemo" / "config.json"
@@ -676,6 +701,55 @@ class WebMemoAPI:
                 "success": True, 
                 "data": {
                     "message": "Storage migrated successfully. Please restart the app for full effect.",
+                    "new_path": str(new_base)
+                }
+            })
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e)})
+
+    def update_storage_config(self, new_path: str) -> str:
+        """Update storage configuration without migrating data.
+        
+        Args:
+            new_path: New storage folder path
+            
+        Returns:
+            JSON string with success status.
+        """
+        try:
+            new_base = Path(new_path)
+            
+            # Validate new path
+            if not new_base.exists():
+                return json.dumps({"success": False, "error": "Selected folder does not exist"})
+            
+            if not new_base.is_dir():
+                return json.dumps({"success": False, "error": "Selected path is not a directory"})
+            
+            # Check if new path has required structure
+            new_db_path = new_base / "memo.db"
+            new_notes_dir = new_base / "notes"
+            
+            if not (new_db_path.exists() and new_notes_dir.exists()):
+                return json.dumps({"success": False, "error": "Target folder does not contain valid NuniMemo data structure"})
+            
+            # Save configuration for next startup
+            config_path = Path.home() / ".nunimemo" / "config.json"
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            import json as json_lib
+            config = {"storage_path": str(new_base)}
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json_lib.dump(config, f, indent=2)
+            
+            # Update runtime storage paths to new location
+            self._storage_path = str(new_base)
+            self._assets_path = str(new_base / "assets")
+            
+            return json.dumps({
+                "success": True, 
+                "data": {
+                    "message": "Storage configuration updated. Using existing data at new location.",
                     "new_path": str(new_base)
                 }
             })
@@ -821,3 +895,237 @@ class WebMemoAPI:
             return json.dumps({"success": True})
         except Exception as e:
             return json.dumps({"success": False, "error": str(e)})
+
+    def export_data(self, include_assets: bool = True) -> str:
+        """Export all workspace data to a ZIP file.
+        
+        Args:
+            include_assets: Whether to include assets folder in export
+            
+        Returns:
+            JSON string with export result.
+        """
+        print(f"DEBUG: export_data function called with include_assets={include_assets}")
+        try:
+            from datetime import datetime
+            from pathlib import Path
+            from tkinter import filedialog
+            import tkinter as tk
+            
+            print(f"Debug: export_data called")
+            print(f"Debug: hasattr(self, '_storage_path'): {hasattr(self, '_storage_path')}")
+            print(f"Debug: self._storage_path: {getattr(self, '_storage_path', 'Not set')}")
+            print(f"Debug: self.file_storage exists: {self.file_storage is not None}")
+            if self.file_storage:
+                print(f"Debug: self.file_storage.base_path: {self.file_storage.base_path}")
+            
+            # Use current storage path if available, otherwise fall back to file_storage or config
+            if hasattr(self, '_storage_path') and self._storage_path:
+                workspace_path = Path(self._storage_path)
+                print(f"Debug: Using _storage_path: {workspace_path}")
+            elif self.file_storage:
+                workspace_path = self.file_storage.base_path
+                print(f"Debug: Using file_storage.base_path: {workspace_path}")
+            else:
+                from mycloudmemo.config import get_workspace_path
+                workspace_path = get_workspace_path()
+                print(f"Debug: Using get_workspace_path(): {workspace_path}")
+            
+            if not workspace_path:
+                return json.dumps({"success": False, "error": "워크스페이스 경로를 찾을 수 없습니다"})
+            
+            # Create file save dialog
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes('-topmost', True)
+            
+            # Generate default filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            default_filename = f"nunimemo_export_{timestamp}.zip"
+            
+            # Show file save dialog
+            file_path = filedialog.asksaveasfilename(
+                title="내보내기 파일 저장",
+                initialdir=str(workspace_path.parent),
+                initialfile=default_filename,
+                defaultextension=".zip",
+                filetypes=[("ZIP files", "*.zip"), ("All files", "*.*")]
+            )
+            
+            root.destroy()
+            
+            if not file_path:
+                return json.dumps({"success": False, "error": "파일이 선택되지 않았습니다"})
+            
+            print(f"Debug: Final workspace_path: {workspace_path}")
+            print(f"Debug: Final export_path: {file_path}")
+            
+            result = export_workspace(str(workspace_path), str(file_path), include_assets)
+            return result
+            
+        except Exception as e:
+            print(f"Debug: Exception in export_data: {e}")
+            return json.dumps({"success": False, "error": f"보내기 실패: {str(e)}"})
+
+    def import_data(self, file_content: str, merge_mode: bool = False) -> str:
+        """Import data from a base64-encoded ZIP file.
+        
+        Args:
+            file_content: Base64-encoded ZIP file content
+            merge_mode: If True, merge with existing data; if False, replace
+            
+        Returns:
+            JSON string with import result.
+        """
+        try:
+            import base64
+            import tempfile
+            import os
+            from pathlib import Path
+            
+            # Decode base64 content
+            if ',' in file_content:
+                header, data = file_content.split(',', 1)
+                file_bytes = base64.b64decode(data)
+            else:
+                file_bytes = base64.b64decode(file_content)
+            
+            # Create temporary file
+            with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as temp_file:
+                temp_file.write(file_bytes)
+                temp_file_path = temp_file.name
+            
+            try:
+                # Use current storage path if available, otherwise fall back to file_storage or config
+                if hasattr(self, '_storage_path') and self._storage_path:
+                    workspace_path = Path(self._storage_path)
+                elif self.file_storage:
+                    workspace_path = self.file_storage.base_path
+                else:
+                    from mycloudmemo.config import get_workspace_path
+                    workspace_path = get_workspace_path()
+                
+                if not workspace_path:
+                    return json.dumps({"success": False, "error": "워크스페이스 경로를 찾을 수 없습니다"})
+                
+                result = import_workspace(temp_file_path, str(workspace_path), merge_mode)
+                return result
+                
+            finally:
+                # Clean up temporary file
+                try:
+                    os.unlink(temp_file_path)
+                except:
+                    pass
+            
+        except Exception as e:
+            return json.dumps({"success": False, "error": f"가져오기 실패: {str(e)}"})
+
+    def select_export_location(self) -> str:
+        """Open folder picker for export location.
+        
+        Returns:
+            JSON string with selected path.
+        """
+        try:
+            from tkinter import filedialog
+            import tkinter as tk
+            from pathlib import Path
+            
+            # Create root window (hidden)
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes('-topmost', True)
+            
+            # Get initial directory
+            initial_dir = None
+            if hasattr(self, 'file_storage') and self.file_storage and hasattr(self.file_storage, 'workspace_path') and self.file_storage.workspace_path:
+                initial_dir = str(self.file_storage.workspace_path.parent)
+            elif hasattr(self, 'storage_path') and self.storage_path:
+                initial_dir = str(Path(self.storage_path).parent)
+            
+            # Show folder selection dialog
+            folder_path = filedialog.askdirectory(
+                title="내보내기 위치 선택",
+                initialdir=initial_dir
+            )
+            
+            root.destroy()
+            
+            if folder_path:
+                return json.dumps({"success": True, "data": {"path": folder_path}})
+            else:
+                return json.dumps({"success": False, "error": "위치가 선택되지 않았습니다"})
+                
+        except Exception as e:
+            return json.dumps({"success": False, "error": f"위치 선택 실패: {str(e)}"})
+
+    def export_data_custom(self, export_path: str, include_assets: bool = True) -> str:
+        """Export data to custom location.
+        
+        Args:
+            export_path: Full path including filename for export file
+            include_assets: Whether to include assets folder in export
+            
+        Returns:
+            JSON string with export result.
+        """
+        try:
+            from pathlib import Path
+            
+            export_file = Path(export_path)
+            
+            # Get workspace path
+            workspace_path = None
+            if hasattr(self, 'file_storage') and self.file_storage and hasattr(self.file_storage, 'workspace_path') and self.file_storage.workspace_path:
+                workspace_path = self.file_storage.workspace_path
+            else:
+                workspace_path = get_workspace_path()
+            
+            if not workspace_path:
+                return json.dumps({"success": False, "error": "워크스페이스 경로를 찾을 수 없습니다"})
+            
+            # Ensure export directory exists
+            export_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            result = export_workspace(str(workspace_path), str(export_file), include_assets)
+            return result
+            
+        except Exception as e:
+            return json.dumps({"success": False, "error": f"내보내기 실패: {str(e)}"})
+
+    def restart_app(self) -> str:
+        """Restart the application."""
+        try:
+            import sys
+            import os
+            import subprocess
+            import threading
+            import time
+            
+            # Get the current executable and script path
+            if getattr(sys, 'frozen', False):
+                # Running as compiled executable
+                executable = sys.executable
+                args = [executable]
+            else:
+                # Running as Python script
+                executable = sys.executable
+                main_script = os.path.join(os.path.dirname(__file__), '..', 'main.py')
+                main_script = os.path.abspath(main_script)
+                args = [executable, main_script]
+            
+            # Start new process
+            subprocess.Popen(args, creationflags=subprocess.CREATE_NEW_CONSOLE if sys.platform == 'win32' else 0)
+            
+            # Schedule exit after response
+            def exit_app():
+                time.sleep(1)
+                os._exit(0)
+            
+            threading.Thread(target=exit_app, daemon=True).start()
+            
+            return json.dumps({"success": True})
+            
+        except Exception as e:
+            return json.dumps({"success": False, "error": f"재시작 실패: {str(e)}"})

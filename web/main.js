@@ -847,6 +847,19 @@ function setupEventListeners() {
     elements.btnCloseSettings.addEventListener('click', hideSettingsModal);
     elements.btnChangeStorage.addEventListener('click', changeStorageFolder);
     
+    // Settings tab switching
+    document.getElementById('tab-storage').addEventListener('click', () => switchSettingsTab('storage'));
+    document.getElementById('tab-export').addEventListener('click', () => switchSettingsTab('export'));
+    document.getElementById('tab-import').addEventListener('click', () => switchSettingsTab('import'));
+    
+    // Export/Import buttons
+    document.getElementById('btn-export-data').addEventListener('click', exportData);
+    document.getElementById('btn-select-import-file').addEventListener('click', () => {
+        document.getElementById('import-file-input').click();
+    });
+    document.getElementById('import-file-input').addEventListener('change', handleImportFileSelect);
+    document.getElementById('btn-import-data').addEventListener('click', importData);
+    
     // Close settings modal on backdrop click
     elements.settingsModal.addEventListener('click', (e) => {
         if (e.target === elements.settingsModal) hideSettingsModal();
@@ -1583,6 +1596,9 @@ async function showSettingsModal() {
     elements.settingsModal.classList.remove('hidden');
     elements.settingsModal.classList.add('flex');
     
+    // Ensure storage tab is active by default
+    switchSettingsTab('storage');
+    
     // Load current storage path
     const response = await callApi('get_storage_path');
     if (response.success) {
@@ -1602,6 +1618,221 @@ function hideSettingsModal() {
     elements.settingsModal.classList.remove('flex');
 }
 
+function switchSettingsTab(tabName) {
+    // Update tab buttons
+    const tabs = ['storage', 'export', 'import'];
+    tabs.forEach(tab => {
+        const tabBtn = document.getElementById(`tab-${tab}`);
+        const tabContent = document.getElementById(`${tab}-tab-content`);
+        
+        if (tab === tabName) {
+            // Active tab
+            tabBtn.classList.remove('text-slate-600', 'hover:bg-slate-50');
+            tabBtn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600', 'bg-blue-50');
+            tabContent.classList.remove('hidden');
+        } else {
+            // Inactive tab
+            tabBtn.classList.add('text-slate-600', 'hover:bg-slate-50');
+            tabBtn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600', 'bg-blue-50');
+            tabContent.classList.add('hidden');
+        }
+    });
+}
+
+async function exportData() {
+    const includeAssets = document.getElementById('include-assets').checked;
+    const exportBtn = document.getElementById('btn-export-data');
+    const progressDiv = document.getElementById('export-progress');
+    const statusText = document.getElementById('export-status');
+    const percentText = document.getElementById('export-percent');
+    const progressBar = document.getElementById('export-bar');
+    
+    try {
+        // Show progress
+        exportBtn.disabled = true;
+        exportBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>보내는 중...';
+        progressDiv.classList.remove('hidden');
+        statusText.textContent = '데이터보내는 중...';
+        percentText.textContent = '0%';
+        progressBar.style.width = '0%';
+        
+        // Simulate progress
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 10;
+            percentText.textContent = `${progress}%`;
+            progressBar.style.width = `${progress}%`;
+            if (progress >= 90) {
+                clearInterval(progressInterval);
+            }
+        }, 200);
+        
+        // Call export API
+        const response = await callApi('export_data', includeAssets);
+        
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+        percentText.textContent = '100%';
+        
+        if (response.success) {
+            statusText.textContent = '보내기 완료!';
+            
+            // Show success message with file info
+            const fileSizeMB = (response.file_size / (1024 * 1024)).toFixed(2);
+            const stats = response.stats;
+            
+            setTimeout(() => {
+                alert(`데이터가 성공적으로보내기되었습니다!\n\n` +
+                      `파일: ${response.file_path}\n` +
+                      `크기: ${fileSizeMB} MB\n` +
+                      `카테고리: ${stats.folders}개\n` +
+                      `문서: ${stats.memos}개\n` +
+                      `이미지 포함: ${stats.assets_included ? '예' : '아니오'}`);
+                
+                // Reset UI
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = '<i data-lucide="package" class="w-4 h-4"></i>보내기 시작';
+                progressDiv.classList.add('hidden');
+                lucide.createIcons();
+            }, 500);
+        } else {
+            throw new Error(response.error);
+        }
+        
+    } catch (error) {
+        statusText.textContent = '보내기 실패!';
+        progressBar.style.width = '0%';
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = '<i data-lucide="package" class="w-4 h-4"></i>보내기 시작';
+        showError(`보내기 실패: ${error.message}`);
+        
+        setTimeout(() => {
+            progressDiv.classList.add('hidden');
+            lucide.createIcons();
+        }, 500);
+    }
+}
+
+function handleImportFileSelect(e) {
+    const fileInput = e.target;
+    const fileNameDisplay = document.getElementById('import-file-name');
+    const importBtn = document.getElementById('btn-import-data');
+    
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        fileNameDisplay.textContent = file.name;
+        importBtn.disabled = false;
+    } else {
+        fileNameDisplay.textContent = '파일 선택...';
+        importBtn.disabled = true;
+    }
+}
+
+async function importData() {
+    const fileInput = document.getElementById('import-file-input');
+    const mergeMode = document.getElementById('merge-mode').checked;
+    const importBtn = document.getElementById('btn-import-data');
+    const progressDiv = document.getElementById('import-progress');
+    const statusText = document.getElementById('import-status');
+    const percentText = document.getElementById('import-percent');
+    const progressBar = document.getElementById('import-bar');
+    
+    if (!fileInput.files.length) {
+        showError('가져올 파일을 선택해주세요.');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    
+    // Validate file
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+        showError('ZIP 파일만 가져올 수 있습니다.');
+        return;
+    }
+    
+    // Confirm import
+    const confirmMessage = mergeMode 
+        ? `선택한 파일의 데이터를 기존 데이터와 병합하시겠습니까?\n\n파일: ${file.name}\n크기: ${(file.size / (1024 * 1024)).toFixed(2)} MB`
+        : `선택한 파일로 데이터를 교체하시겠습니까?\n기존 데이터는 백업됩니다.\n\n파일: ${file.name}\n크기: ${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    try {
+        // Show progress
+        importBtn.disabled = true;
+        importBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 가져오는 중...';
+        progressDiv.classList.remove('hidden');
+        statusText.textContent = '데이터 가져오는 중...';
+        percentText.textContent = '0%';
+        progressBar.style.width = '0%';
+        
+        // Read file as base64
+        const fileContent = await readFileAsBase64(file);
+        
+        // Simulate progress
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 15;
+            percentText.textContent = `${progress}%`;
+            progressBar.style.width = `${progress}%`;
+            if (progress >= 90) {
+                clearInterval(progressInterval);
+            }
+        }, 300);
+        
+        // Call import API
+        const response = await callApi('import_data', fileContent, mergeMode);
+        
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+        percentText.textContent = '100%';
+        
+        if (response.success) {
+            statusText.textContent = '가져오기 완료!';
+            
+            const stats = response.stats;
+            
+            setTimeout(async () => {
+                alert(`데이터가 성공적으로 가져왔습니다!\n\n` +
+                      `카테고리: ${stats.folders}개\n` +
+                      `문서: ${stats.memos}개\n` +
+                      `이미지: ${stats.assets}개\n` +
+                      `소스 버전: ${response.source_version}\n` +
+                      `보내기 날짜: ${response.source_date}\n` +
+                      `병합 모드: ${mergeMode ? 'ON' : 'OFF'}`);
+                
+                alert('앱을 다시 시작합니다.');
+                restartApp();
+            }, 500);
+        } else {
+            throw new Error(response.error);
+        }
+        
+    } catch (error) {
+        statusText.textContent = '가져오기 실패!';
+        progressBar.style.width = '0%';
+        importBtn.disabled = false;
+        importBtn.innerHTML = '<i data-lucide="package-open" class="w-4 h-4"></i> 가져오기 시작';
+        showError(`가져오기 실패: ${error.message}`);
+        
+        setTimeout(() => {
+            progressDiv.classList.add('hidden');
+            lucide.createIcons();
+        }, 500);
+    }
+}
+
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 async function changeStorageFolder() {
     // Open folder picker dialog via backend
     const response = await callApi('select_folder_dialog');
@@ -1617,26 +1848,47 @@ async function changeStorageFolder() {
         return;
     }
     
-    // Check if target has existing data and ask about overwrite
-    const checkResponse = await callApi('migrate_storage', newPath, false);
-    if (!checkResponse.success && checkResponse.error.includes('already contains')) {
-        const overwrite = confirm(
-            `대상 폴더에 이미 메모 데이터가 있습니다.\n\n${checkResponse.error}\n\n기존 데이터를 덮어쓰시겠습니까?\n(백업 후 진행을 권장합니다.)`
-        );
+    // Check if target has existing data
+    const checkResponse = await callApi('migrate_storage', newPath, false, true);
+    if (!checkResponse.success && checkResponse.error && checkResponse.error.includes('already contains')) {
+        // Show custom dialog with 3 options
+        const choice = await showMigrationDialog(checkResponse.error);
         
-        if (!overwrite) {
-            return;
+        if (!choice) {
+            return; // User cancelled
         }
         
-        // Proceed with overwrite
-        const migrateResponse = await callApi('migrate_storage', newPath, true);
-        handleMigrationResult(migrateResponse, newPath);
-        return;
+        if (choice === 'use_existing') {
+            // Just update config to use existing data
+            const configResponse = await callApi('update_storage_config', newPath);
+            if (configResponse.success) {
+                alert('저장 폴더가 변경되었습니다. 앱을 다시 시작합니다.');
+                restartApp();
+            } else {
+                showError(configResponse.error || '설정 변경에 실패했습니다.');
+            }
+            return;
+        } else {
+            // Overwrite with migration
+            const migrateResponse = await callApi('migrate_storage', newPath, true, true);
+            if (migrateResponse.success) {
+                alert('데이터가 마이그레이션되었습니다. 앱을 다시 시작합니다.');
+                restartApp();
+            } else {
+                showError(migrateResponse.error || '마이그레이션에 실패했습니다.');
+            }
+            return;
+        }
     }
     
     // No existing data, proceed normally
-    const migrateResponse = await callApi('migrate_storage', newPath, false);
-    handleMigrationResult(migrateResponse, newPath);
+    const migrateResponse = await callApi('migrate_storage', newPath, false, true);
+    if (migrateResponse.success) {
+        alert('저장 폴더가 변경되었습니다. 앱을 다시 시작합니다.');
+        restartApp();
+    } else {
+        showError(migrateResponse.error || '저장 폴더 변경에 실패했습니다.');
+    }
 }
 
 function handleMigrationResult(response, newPath) {
@@ -1656,6 +1908,79 @@ function handleMigrationResult(response, newPath) {
             showError('저장 폴더 변경에 실패했습니다: ' + (response.error || 'Unknown error'));
         }
     }
+}
+
+function showMigrationDialog(errorMsg) {
+    return new Promise((resolve) => {
+        // Create modal dialog
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+                <div class="flex items-center gap-2 mb-4 text-amber-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                    <h3 class="text-lg font-semibold">데이터 충돌 감지</h3>
+                </div>
+                <p class="text-sm text-slate-600 mb-4">${errorMsg}</p>
+                <p class="text-sm text-slate-700 mb-6">어떻게 처리하시겠습니까?</p>
+                <div class="space-y-2">
+                    <button id="use-existing-btn" class="w-full px-4 py-2 text-left text-sm bg-slate-50 hover:bg-slate-100 rounded-lg flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+                        <div>
+                            <div class="font-medium">기존 데이터 사용</div>
+                            <div class="text-xs text-slate-500">대상 폴더의 데이터를 그대로 사용합니다</div>
+                        </div>
+                    </button>
+                    <button id="overwrite-btn" class="w-full px-4 py-2 text-left text-sm bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        <div>
+                            <div class="font-medium">덮어쓰기</div>
+                            <div class="text-xs text-amber-600">현재 데이터로 대상 폴더를 덮어씁니다 (백업 권장)</div>
+                        </div>
+                    </button>
+                    <button id="cancel-btn" class="w-full px-4 py-2 text-sm border border-slate-200 hover:bg-slate-50 rounded-lg mt-2">
+                        취소
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Button handlers
+        modal.querySelector('#use-existing-btn').addEventListener('click', () => {
+            document.body.removeChild(modal);
+            resolve('use_existing');
+        });
+        
+        modal.querySelector('#overwrite-btn').addEventListener('click', () => {
+            document.body.removeChild(modal);
+            resolve('overwrite');
+        });
+        
+        modal.querySelector('#cancel-btn').addEventListener('click', () => {
+            document.body.removeChild(modal);
+            resolve(null);
+        });
+        
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+                resolve(null);
+            }
+        });
+    });
+}
+
+function restartApp() {
+    // Call backend to restart the app
+    callApi('restart_app').then(() => {
+        // The app will close and restart
+    }).catch(() => {
+        // If restart fails, just reload the page
+        window.location.reload();
+    });
 }
 
 function updateSyncStatus(status) {

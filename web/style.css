@@ -107,14 +107,115 @@
 .toastui-editor-contents table th,
 .toastui-editor-contents table td {
     background: white !important;
-    color: #333 !important;
     border: 1px solid #e2e8f0 !important;
     padding: 8px 12px !important;
     text-align: left !important;
     font-weight: normal !important;
+    color: #1f2937 !important;
 }
 
-.toastui-editor-contents table th {
-    font-weight: 500 !important;
+.toastui-editor-contents table thead,
+.toastui-editor-contents table tbody,
+.toastui-editor-contents table tr,
+.toastui-editor-contents table th,
+.toastui-editor-contents table td,
+.toastui-editor-contents table th *,
+.toastui-editor-contents table td * {
+    background: white !important;
+    color: #1f2937 !important;
+    font-weight: normal !important;
+}
+
+/* ============================================================================
+   Obsidian-style File Explorer
+   ============================================================================ */
+
+.obsidian-explorer {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.4;
+}
+
+/* Tree item container */
+.obsidian-tree-item {
+    position: relative;
+}
+
+/* Chevron icon styling */
+.obsidian-tree-item [data-lucide="chevron-right"] {
+    opacity: 0.6;
+}
+
+.obsidian-tree-item [data-lucide="chevron-right"]:hover {
+    opacity: 1;
+}
+
+/* Active item indicator bar (left accent) */
+.obsidian-tree-item [data-folder-id].bg-slate-200::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 2px;
+    bottom: 2px;
+    width: 2px;
+    background-color: #6366f1;
+    border-radius: 0 2px 2px 0;
+}
+
+/* Root item special styling */
+.obsidian-explorer > div:first-child {
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+}
+
+/* Indentation guide line animation */
+.obsidian-tree-item .border-l {
+    transition: border-color 0.15s ease;
+}
+
+.obsidian-tree-item:hover > div:last-child .border-l {
+    border-color: #cbd5e1;
+}
+
+/* Smooth expand/collapse */
+.obsidian-tree-item > div:last-child {
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+/* Hover state enhancement */
+.obsidian-tree-item [data-folder-id]:hover {
+    background-color: rgba(226, 232, 240, 0.6);
+}
+
+/* Selected state enhancement */
+.obsidian-tree-item [data-folder-id].bg-slate-200 {
+    background-color: #e2e8f0 !important;
+}
+
+/* Text truncation with ellipsis */
+.obsidian-tree-item span.truncate {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Context menu styling for Obsidian theme */
+.folder-context-menu {
+    font-size: 13px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.folder-context-menu-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+
+.folder-context-menu-item:hover {
+    background: #f1f5f9;
 }
 

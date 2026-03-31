@@ -366,6 +366,35 @@ class DatabaseManager:
             connection.commit()
         return cursor.rowcount > 0
 
+    def rename_folder(self, folder_id: str, new_name: str) -> bool:
+        """Rename a folder."""
+
+        if folder_id == "root":
+            return False  # Cannot rename root folder
+        
+        # Check if name already exists in the same parent
+        parent_query = "SELECT parent_id FROM folders WHERE id = ?"
+        with self.connect() as connection:
+            cursor = connection.execute(parent_query, (folder_id,))
+            result = cursor.fetchone()
+            if not result:
+                return False
+            
+            parent_id = result[0]
+            
+            # Check for duplicate names
+            duplicate_query = "SELECT id FROM folders WHERE parent_id = ? AND name = ? AND id != ?"
+            cursor = connection.execute(duplicate_query, (parent_id, new_name, folder_id))
+            if cursor.fetchone():
+                return False  # Name already exists
+            
+            # Update the folder name
+            update_query = "UPDATE folders SET name = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?"
+            cursor = connection.execute(update_query, (new_name, folder_id))
+            connection.commit()
+            
+        return cursor.rowcount > 0
+
     def _is_descendant_of(self, potential_parent_id: str | None, folder_id: str) -> bool:
         """Check if potential_parent_id is a descendant of folder_id."""
 

@@ -5,15 +5,163 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NuniMemo</title>
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fallback CSS for offline mode -->
+    <style>
+        /* Essential Tailwind-like utilities for offline mode */
+        .flex { display: flex; }
+        .flex-1 { flex: 1; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-1 { gap: 0.25rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+        .w-4 { width: 1rem; }
+        .w-5 { width: 1.25rem; }
+        .w-6 { width: 1.5rem; }
+        .w-7 { width: 1.75rem; }
+        .w-8 { width: 2rem; }
+        .h-4 { height: 1rem; }
+        .h-5 { height: 1.25rem; }
+        .h-6 { height: 1.5rem; }
+        .h-7 { height: 1.75rem; }
+        .h-8 { height: 2rem; }
+        .h-14 { height: 3.5rem; }
+        .h-screen { height: 100vh; }
+        .min-h-0 { min-height: 0; }
+        .p-1 { padding: 0.25rem; }
+        .p-2 { padding: 0.5rem; }
+        .p-3 { padding: 0.75rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .px-8 { padding-left: 2rem; padding-right: 2rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+        .m-0 { margin: 0; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mt-3 { margin-top: 0.75rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .ml-2 { margin-left: 0.5rem; }
+        .ml-3 { margin-left: 0.75rem; }
+        .mr-1 { margin-right: 0.25rem; }
+        .mr-2 { margin-right: 0.5rem; }
+        .border { border-width: 1px; }
+        .border-t { border-top-width: 1px; }
+        .border-b { border-bottom-width: 1px; }
+        .border-r { border-right-width: 1px; }
+        .border-l { border-left-width: 1px; }
+        .border-slate-100 { border-color: #f1f5f9; }
+        .border-slate-200 { border-color: #e2e8f0; }
+        .border-slate-300 { border-color: #cbd5e1; }
+        .border-blue-500 { border-color: #3b82f6; }
+        .bg-white { background-color: #ffffff; }
+        .bg-slate-50 { background-color: #f8fafc; }
+        .bg-slate-100 { background-color: #f1f5f9; }
+        .bg-slate-200 { background-color: #e2e8f0; }
+        .bg-slate-700 { background-color: #334155; }
+        .bg-blue-500 { background-color: #3b82f6; }
+        .bg-blue-600 { background-color: #2563eb; }
+        .bg-emerald-500 { background-color: #10b981; }
+        .bg-emerald-600 { background-color: #059669; }
+        .bg-amber-50 { background-color: #fffbeb; }
+        .bg-black { background-color: #000000; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .text-slate-400 { color: #94a3b8; }
+        .text-slate-500 { color: #64748b; }
+        .text-slate-600 { color: #475569; }
+        .text-slate-700 { color: #334155; }
+        .text-slate-800 { color: #1e293b; }
+        .text-slate-900 { color: #0f172a; }
+        .text-white { color: #ffffff; }
+        .text-blue-500 { color: #3b82f6; }
+        .text-amber-500 { color: #f59e0b; }
+        .text-amber-700 { color: #b45309; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-sm { border-radius: 0.125rem; }
+        .rounded-2xl { border-radius: 1rem; }
+        .rounded-md { border-radius: 0.375rem; }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .hover\\:bg-slate-50:hover { background-color: #f8fafc; }
+        .hover\\:bg-slate-100:hover { background-color: #f1f5f9; }
+        .hover\\:bg-slate-200:hover { background-color: #e2e8f0; }
+        .hover\\:bg-blue-600:hover { background-color: #2563eb; }
+        .hover\\:bg-emerald-600:hover { background-color: #059669; }
+        .hover\\:outline:hover { outline: 2px solid; }
+        .hover\\:outline-2:hover { outline-width: 2px; }
+        .hover\\:outline-blue-500:hover { outline-color: #3b82f6; }
+        .hover\\:outline-offset-2:hover { outline-offset: 2px; }
+        .transition-colors { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+        .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+        .duration-150 { transition-duration: 150ms; }
+        .duration-300 { transition-duration: 300ms; }
+        .opacity-50 { opacity: 0.5; }
+        .cursor-pointer { cursor: pointer; }
+        .cursor-not-allowed { cursor: not-allowed; }
+        .select-none { user-select: none; }
+        .overflow-y-auto { overflow-y: auto; }
+        .overflow-hidden { overflow: hidden; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .fixed { position: fixed; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .z-50 { z-index: 50; }
+        .z-10 { z-index: 10; }
+        .hidden { display: none; }
+        .w-80 { width: 20rem; }
+        .w-96 { width: 24rem; }
+        .w-full { width: 100%; }
+        .h-2 { height: 0.5rem; }
+        .h-full { height: 100%; }
+        .min-w-0 { min-width: 0; }
+        .max-w-\\[500px\\] { max-width: 500px; }
+        .max-h-\\[80vh\\] { max-height: 80vh; }
+        .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .flex-shrink-0 { flex-shrink: 0; }
+        .break-all { word-break: break-all; }
+        .text-center { text-align: center; }
+        .whitespace-nowrap { white-space: nowrap; }
+        .bg-transparent { background-color: transparent; }
+        .border-collapse { border-collapse: collapse; }
+        .table { display: table; }
+        .invisible { visibility: hidden; }
+        .rotate-90 { transform: rotate(90deg); }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .text-\\[13px\\] { font-size: 13px; }
+        .ml-\\[8px\\] { margin-left: 8px; }
+        .px-\\[8px\\] { padding-left: 8px; padding-right: 8px; }
+        .py-\\[4px\\] { padding-top: 4px; padding-bottom: 4px; }
+    </style>
     
-    <!-- TOAST UI Editor -->
-    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
-    <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+    <!-- TOAST UI Editor CSS (LOCAL) -->
+    <link rel="stylesheet" href="toastui-editor.min.css" />
     
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Lucide Icons (LOCAL) -->
+    <script src="lucide.min.js"></script>
+    
+    <!-- TOAST UI Editor JS (LOCAL) -->
+    <script src="toastui-editor-all.min.js"></script>
+    
+    <!-- Tailwind CSS (LOCAL) -->
+    <script src="tailwindcss.js"></script>
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
@@ -227,11 +375,15 @@
         .toastui-editor-contents td {
             border: 1px solid #e2e8f0 !important;
             padding: 0.5em !important;
+            background: white !important;
+            color: #1f2937 !important;
+            font-weight: normal !important;
         }
         
         .toastui-editor-contents th {
-            background: #f8fafc !important;
-            font-weight: 600 !important;
+            background: white !important;
+            color: #1f2937 !important;
+            font-weight: normal !important;
         }
         
         .editor-container {
@@ -490,58 +642,227 @@
     
     <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 bg-black/30 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-2xl p-6 w-[500px] shadow-2xl max-h-[80vh] overflow-y-auto">
-            <div class="flex items-center justify-between mb-6">
+        <div class="bg-white rounded-2xl w-[600px] shadow-2xl max-h-[80vh] overflow-hidden">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b border-slate-100">
                 <h3 class="text-lg font-semibold text-slate-800">설정</h3>
                 <button id="btn-close-settings" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors">
                     <i data-lucide="x" class="w-5 h-5 text-slate-400"></i>
                 </button>
             </div>
             
-            <!-- Storage Folder Section -->
-            <div class="space-y-4">
-                <div class="border-b border-slate-100 pb-4">
-                    <h4 class="text-sm font-medium text-slate-700 mb-3">메모 보관 폴더</h4>
-                    
-                    <!-- Current Path Display -->
-                    <div class="bg-slate-50 rounded-lg p-3 mb-3">
-                        <div class="text-xs text-slate-500 mb-1">현재 저장 위치</div>
-                        <div id="current-storage-path" class="text-sm text-slate-700 font-mono break-all">로딩 중...</div>
-                    </div>
-                    
-                    <!-- Change Folder Button -->
-                    <button id="btn-change-storage" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all">
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-slate-100">
+                <button id="tab-storage" class="flex-1 px-4 py-3 text-sm font-medium text-blue-600 border-b-2 border-blue-600 bg-blue-50 transition-colors" data-tab="storage">
+                    <div class="flex items-center justify-center gap-2">
                         <i data-lucide="folder-open" class="w-4 h-4"></i>
-                        <span>저장 폴더 변경...</span>
-                    </button>
-                    
-                    <!-- Migration Progress (hidden by default) -->
-                    <div id="migration-progress" class="hidden mt-3">
-                        <div class="flex items-center justify-between text-xs text-slate-600 mb-2">
-                            <span id="migration-status">파일 이동 중...</span>
-                            <span id="migration-percent">0%</span>
-                        </div>
-                        <div class="w-full bg-slate-200 rounded-full h-2">
-                            <div id="migration-bar" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                        </div>
+                        <span>저장 위치</span>
                     </div>
-                    
-                    <!-- Warning Message -->
-                    <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                        <div class="flex items-start gap-2">
-                            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0"></i>
-                            <p class="text-xs text-amber-700">
-                                저장 폴더를 변경하면 기존의 모든 메모 파일이 새 위치로 이동됩니다. 
-                                이동 중 앱을 종료하지 마세요.
-                            </p>
+                </button>
+                <button id="tab-export" class="flex-1 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-tab="export">
+                    <div class="flex items-center justify-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>데이터 내보내기</span>
+                    </div>
+                </button>
+                <button id="tab-import" class="flex-1 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-tab="import">
+                    <div class="flex items-center justify-center gap-2">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        <span>데이터 가져오기</span>
+                    </div>
+                </button>
+            </div>
+            
+            <!-- Tab Content -->
+            <div class="p-6 max-h-[60vh] overflow-y-auto">
+                <!-- Storage Tab -->
+                <div id="storage-tab-content" class="space-y-4">
+                    <div class="bg-slate-50 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-slate-700 mb-3">메모 보관 폴더</h4>
+                        
+                        <!-- Current Path Display -->
+                        <div class="bg-white rounded-lg p-3 mb-3 border border-slate-200">
+                            <div class="text-xs text-slate-500 mb-1">현재 저장 위치</div>
+                            <div id="current-storage-path" class="text-sm text-slate-700 font-mono break-all">로딩 중...</div>
+                        </div>
+                        
+                        <!-- Change Folder Button -->
+                        <button id="btn-change-storage" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all">
+                            <i data-lucide="folder-open" class="w-4 h-4"></i>
+                            <span>저장 폴더 변경...</span>
+                        </button>
+                        
+                        <!-- Migration Progress (hidden by default) -->
+                        <div id="migration-progress" class="hidden mt-3">
+                            <div class="flex items-center justify-between text-xs text-slate-600 mb-2">
+                                <span id="migration-status">파일 이동 중...</span>
+                                <span id="migration-percent">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2">
+                                <div id="migration-bar" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Warning Message -->
+                        <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div class="flex items-start gap-2">
+                                <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0"></i>
+                                <p class="text-xs text-amber-700">
+                                    저장 폴더를 변경하면 기존의 모든 메모 파일이 새 위치로 이동됩니다. 
+                                    이동 중 앱을 종료하지 마세요.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Other Settings Sections can be added here -->
-                <div class="text-xs text-slate-400 text-center pt-2">
+                <!-- Export Tab -->
+                <div id="export-tab-content" class="space-y-4 hidden">
+                    <div class="bg-slate-50 rounded-lg p-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i data-lucide="download" class="w-4 h-4 text-slate-500"></i>
+                            <span class="text-sm font-medium text-slate-700">데이터 내보내기</span>
+                        </div>
+                        
+                        <!-- Export Options -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-slate-600">내보내기 옵션</span>
+                                <label class="flex items-center gap-2 text-xs text-slate-600">
+                                    <input type="checkbox" id="include-assets" checked class="w-3 h-3 text-blue-500">
+                                    <span>이미지 포함</span>
+                                </label>
+                            </div>
+                            
+                            <p class="text-xs text-slate-400">모든 메모, 카테고리, 첨부파일을 ZIP 파일로 내보내기</p>
+                            
+                            <!-- Export Button -->
+                            <button id="btn-export-data" class="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors">
+                                <i data-lucide="package" class="w-4 h-4"></i>
+                                <span>내보내기 시작</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Indicator -->
+                    <div id="export-progress" class="hidden">
+                        <div class="flex items-center justify-between text-xs text-slate-600 mb-2">
+                            <span id="export-status">처리 중...</span>
+                            <span id="export-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2">
+                            <div id="export-bar" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Import Tab -->
+                <div id="import-tab-content" class="space-y-4 hidden">
+                    <div class="bg-slate-50 rounded-lg p-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i data-lucide="upload" class="w-4 h-4 text-slate-500"></i>
+                            <span class="text-sm font-medium text-slate-700">데이터 가져오기</span>
+                        </div>
+                        
+                        <!-- Import Options -->
+                        <div class="space-y-3">
+                            <!-- File Input -->
+                            <div class="bg-white rounded-lg p-3 border border-slate-200">
+                                <div class="text-xs text-slate-500 mb-2">ZIP 파일 선택</div>
+                                <input type="file" id="import-file-input" accept=".zip" class="hidden">
+                                <button id="btn-select-import-file" class="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                                    <span id="import-file-name">파일 선택...</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Import Mode -->
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-slate-600">가져오기 모드</span>
+                                <label class="flex items-center gap-2 text-xs text-slate-600">
+                                    <input type="checkbox" id="merge-mode" class="w-3 h-3 text-blue-500">
+                                    <span>기존 데이터와 병합</span>
+                                </label>
+                            </div>
+                            
+                            <p class="text-xs text-slate-400">체크하지 않으면 기존 데이터가 백업 후 교체됩니다</p>
+                            
+                            <!-- Import Button -->
+                            <button id="btn-import-data" class="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                <i data-lucide="package-open" class="w-4 h-4"></i>
+                                <span>가져오기 시작</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Indicator -->
+                    <div id="import-progress" class="hidden">
+                        <div class="flex items-center justify-between text-xs text-slate-600 mb-2">
+                            <span id="import-status">처리 중...</span>
+                            <span id="import-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2">
+                            <div id="import-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Warning Message -->
+                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0"></i>
+                            <p class="text-xs text-amber-700">
+                                데이터 가져오기 시 기존 데이터가 영향을 받을 수 있습니다. 
+                                중요한 데이터는 먼저 내보내기로 백업하세요.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100">
+                <div class="text-xs text-slate-400 text-center">
                     NuniMemo v1.0
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- File Save Dialog -->
+    <div id="file-save-dialog" class="fixed inset-0 bg-black/30 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 w-[500px] shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-slate-800">내보내기 위치 및 파일명 지정</h3>
+                <button id="btn-close-save-dialog" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5 text-slate-400"></i>
+                </button>
+            </div>
+            
+            <!-- Folder Selection -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-slate-700 mb-2">저장 폴더</label>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="save-dialog-folder" class="flex-1 px-3 py-2 text-sm text-slate-700 bg-white border border-slate-200 rounded-lg" placeholder="폴더 선택..." readonly>
+                    <button id="btn-select-save-folder" class="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                        <i data-lucide="folder-open" class="w-4 h-4"></i>
+                        폴더 선택
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Filename Input -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-700 mb-2">파일 이름</label>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="save-dialog-filename" class="flex-1 px-3 py-2 text-sm text-slate-700 bg-white border border-slate-200 rounded-lg" value="nunimemo_export" placeholder="파일 이름 입력...">
+                    <span class="text-sm text-slate-500">.zip</span>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex justify-end gap-3">
+                <button id="btn-cancel-save" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">취소</button>
+                <button id="btn-confirm-save" class="px-4 py-2 text-sm text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">저장</button>
             </div>
         </div>
     </div>
